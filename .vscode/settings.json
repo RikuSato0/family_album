@@ -1,0 +1,12 @@
+{
+  "dart.flutterSdkPath": ".fvm/versions/3.29.3",
+  "search.exclude": {
+    "**/.fvm": true
+  },
+  "files.watcherExclude": {
+    "**/.fvm": true
+  },
+  "cSpell.words": [
+    "immich"
+  ]
+}
