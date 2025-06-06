@@ -34,42 +34,24 @@ class LibraryPage extends ConsumerWidget {
         child: ListView(
           shrinkWrap: true,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: Row(
-                children: [
-                  ActionButton(
-                    onPressed: () => context.pushRoute(const FavoritesRoute()),
-                    icon: Icons.favorite_outline_rounded,
-                    label: 'favorites'.tr(),
-                  ),
-                  const SizedBox(width: 8),
-                  ActionButton(
-                    onPressed: () => context.pushRoute(const ArchiveRoute()),
-                    icon: Icons.archive_outlined,
-                    label: 'archived'.tr(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                ActionButton(
-                  onPressed: () => context.pushRoute(const SharedLinkRoute()),
-                  icon: Icons.link_outlined,
-                  label: 'shared_links'.tr(),
-                ),
-                SizedBox(width: trashEnabled ? 8 : 0),
-                trashEnabled
-                    ? ActionButton(
-                        onPressed: () => context.pushRoute(const TrashRoute()),
-                        icon: Icons.delete_outline_rounded,
-                        label: 'trash'.tr(),
-                      )
-                    : const SizedBox.shrink(),
-              ],
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.only(top: 16.0),
+            //   child: Row(
+            //     children: [
+            //       ActionButton(
+            //         onPressed: () => context.pushRoute(const FavoritesRoute()),
+            //         icon: Icons.favorite_outline_rounded,
+            //         label: 'favorites'.tr(),
+            //       ),
+            //       const SizedBox(width: 8),
+            //       ActionButton(
+            //         onPressed: () => context.pushRoute(const ArchiveRoute()),
+            //         icon: Icons.archive_outlined,
+            //         label: 'archived'.tr(),
+            //       ),
+            //     ],
+            //   ),
+            // ),
             const SizedBox(height: 12),
             const Wrap(
               spacing: 8,
@@ -81,7 +63,7 @@ class LibraryPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            const QuickAccessButtons(),
+            // const QuickAccessButtons(),
             const SizedBox(
               height: 32,
             ),
