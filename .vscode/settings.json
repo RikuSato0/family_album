@@ -7,6 +7,9 @@
     "**/.fvm": true
   },
   "cSpell.words": [
-    "immich"
+    "asyncvalue",
+    "immich",
+    "maplibre",
+    "Recents"
   ]
 }

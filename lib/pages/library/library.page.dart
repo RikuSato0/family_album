@@ -8,7 +8,7 @@ import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/providers/album/album.provider.dart';
 import 'package:immich_mobile/providers/partner.provider.dart';
 import 'package:immich_mobile/providers/search/people.provider.dart';
-import 'package:immich_mobile/providers/server_info.provider.dart';
+// import 'package:immich_mobile/providers/server_info.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/services/api.service.dart';
 import 'package:immich_mobile/utils/image_url_builder.dart';
@@ -24,8 +24,8 @@ class LibraryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     context.locale;
-    final trashEnabled =
-        ref.watch(serverInfoProvider.select((v) => v.serverFeatures.trash));
+    // final trashEnabled =
+    //     ref.watch(serverInfoProvider.select((v) => v.serverFeatures.trash));
 
     return Scaffold(
       appBar: const ImmichAppBar(),
