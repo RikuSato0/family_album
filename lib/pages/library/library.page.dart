@@ -57,8 +57,11 @@ class LibraryPage extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                PeopleCollectionCard(),
-                PlacesCollectionCard(),
+                RecentCollectionCard(),
+                FamilyCollectionCard(),
+                TravelCollectionCard(),
+                TravelCollectionCard(),
+                TravelCollectionCard(),
                 LocalAlbumsCollectionCard(),
               ],
             ),
@@ -73,7 +76,229 @@ class LibraryPage extends ConsumerWidget {
     );
   }
 }
+class RecentCollectionCard extends ConsumerWidget {
+  const RecentCollectionCard({super.key});
 
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = ref.watch(getAllPeopleProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTablet = constraints.maxWidth > 600;
+        final widthFactor = isTablet ? 0.25 : 0.5;
+        final size = context.width * widthFactor - 20.0;
+
+        return GestureDetector(
+          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: size,
+                width: size,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      context.colorScheme.primary.withAlpha(30),
+                      context.colorScheme.primary.withAlpha(25),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: people.widgetWhen(
+                  onLoading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  onData: (people) {
+                    return GridView.count(
+                      crossAxisCount: 2,
+                      padding: const EdgeInsets.all(12),
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: people.take(4).map((person) {
+                        return CircleAvatar(
+                          backgroundImage: NetworkImage(
+                            getFaceThumbnailUrl(person.id),
+                            headers: ApiService.getRequestHeaders(),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Recents'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  '285 items'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+class FamilyCollectionCard extends ConsumerWidget {
+  const FamilyCollectionCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = ref.watch(getAllPeopleProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTablet = constraints.maxWidth > 600;
+        final widthFactor = isTablet ? 0.25 : 0.5;
+        final size = context.width * widthFactor - 20.0;
+
+        return GestureDetector(
+          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: size,
+                width: size,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      context.colorScheme.primary.withAlpha(30),
+                      context.colorScheme.primary.withAlpha(25),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: people.widgetWhen(
+                  onLoading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  onData: (people) {
+                    return GridView.count(
+                      crossAxisCount: 2,
+                      padding: const EdgeInsets.all(12),
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: people.take(4).map((person) {
+                        return CircleAvatar(
+                          backgroundImage: NetworkImage(
+                            getFaceThumbnailUrl(person.id),
+                            headers: ApiService.getRequestHeaders(),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Family'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+class TravelCollectionCard extends ConsumerWidget {
+  const TravelCollectionCard({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final people = ref.watch(getAllPeopleProvider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTablet = constraints.maxWidth > 600;
+        final widthFactor = isTablet ? 0.25 : 0.5;
+        final size = context.width * widthFactor - 20.0;
+
+        return GestureDetector(
+          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: size,
+                width: size,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      context.colorScheme.primary.withAlpha(30),
+                      context.colorScheme.primary.withAlpha(25),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: people.widgetWhen(
+                  onLoading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  onData: (people) {
+                    return GridView.count(
+                      crossAxisCount: 2,
+                      padding: const EdgeInsets.all(12),
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: people.take(4).map((person) {
+                        return CircleAvatar(
+                          backgroundImage: NetworkImage(
+                            getFaceThumbnailUrl(person.id),
+                            headers: ApiService.getRequestHeaders(),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Travel'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 class QuickAccessButtons extends ConsumerWidget {
   const QuickAccessButtons({super.key});
   @override
