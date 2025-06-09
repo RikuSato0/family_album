@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+// import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/extensions/asyncvalue_extensions.dart';
@@ -8,7 +13,6 @@ import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/providers/album/album.provider.dart';
 import 'package:immich_mobile/providers/partner.provider.dart';
 import 'package:immich_mobile/providers/search/people.provider.dart';
-// import 'package:immich_mobile/providers/server_info.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/services/api.service.dart';
 import 'package:immich_mobile/utils/image_url_builder.dart';
@@ -18,14 +22,33 @@ import 'package:immich_mobile/widgets/common/user_avatar.dart';
 import 'package:immich_mobile/widgets/map/map_thumbnail.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../models/albums/album_search.model.dart';
+import '../../widgets/common/search_field.dart';
+
 @RoutePage()
-class LibraryPage extends ConsumerWidget {
+class LibraryPage extends HookConsumerWidget {
   const LibraryPage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final searchController = useTextEditingController();
+    final filterMode = useState(QuickFilterMode.all);
+    final debounceTimer = useRef<Timer?>(null);
+    final searchFocusNode = useFocusNode();
     context.locale;
+
+    onSearch(String searchTerm, QuickFilterMode mode) {
+      debounceTimer.value?.cancel();
+      debounceTimer.value = Timer(const Duration(milliseconds: 300), () {
+        ref.read(albumProvider.notifier).searchAlbums(searchTerm, mode);
+      });
+    }
     // final trashEnabled =
     //     ref.watch(serverInfoProvider.select((v) => v.serverFeatures.trash));
+    clearSearch() {
+      filterMode.value = QuickFilterMode.all;
+      searchController.clear();
+      onSearch('', QuickFilterMode.all);
+    }
 
     return Scaffold(
       appBar: const ImmichAppBar(),
@@ -34,24 +57,42 @@ class LibraryPage extends ConsumerWidget {
         child: ListView(
           shrinkWrap: true,
           children: [
-            // Padding(
-            //   padding: const EdgeInsets.only(top: 16.0),
-            //   child: Row(
-            //     children: [
-            //       ActionButton(
-            //         onPressed: () => context.pushRoute(const FavoritesRoute()),
-            //         icon: Icons.favorite_outline_rounded,
-            //         label: 'favorites'.tr(),
-            //       ),
-            //       const SizedBox(width: 8),
-            //       ActionButton(
-            //         onPressed: () => context.pushRoute(const ArchiveRoute()),
-            //         icon: Icons.archive_outlined,
-            //         label: 'archived'.tr(),
-            //       ),
-            //     ],
-            //   ),
-            // ),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.colorScheme.onSurface.withAlpha(0),
+                  width: 0,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  colors: [
+                    context.colorScheme.primary.withValues(alpha: 0.075),
+                    context.colorScheme.primary.withValues(alpha: 0.09),
+                    context.colorScheme.primary.withValues(alpha: 0.075),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  transform: const GradientRotation(0.5 * pi),
+                ),
+              ),
+              child: SearchField(
+                autofocus: false,
+                contentPadding: const EdgeInsets.all(16),
+                hintText: 'search_albums'.tr(),
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded),
+                        onPressed: clearSearch,
+                      )
+                    : null,
+                controller: searchController,
+                onChanged: (_) =>
+                    onSearch(searchController.text, filterMode.value),
+                focusNode: searchFocusNode,
+                onTapOutside: (_) => searchFocusNode.unfocus(),
+              ),
+            ),
             const SizedBox(height: 12),
             const Wrap(
               spacing: 8,
