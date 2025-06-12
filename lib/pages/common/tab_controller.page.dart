@@ -64,44 +64,44 @@ class TabControllerPage extends HookConsumerWidget {
     }
 
     final navigationDestinations = [
+      // NavigationDestination(
+      //   label: 'photos'.tr(),
+      //   icon: const Icon(
+      //     Icons.photo_library_outlined,
+      //   ),
+      //   selectedIcon: buildIcon(
+      //     isProcessing: isRefreshingAssets,
+      //     icon: Icon(
+      //       Icons.photo_library,
+      //       color: context.primaryColor,
+      //     ),
+      //   ),
+      // ),
+      // NavigationDestination(
+      //   label: 'search'.tr(),
+      //   icon: const Icon(
+      //     Icons.search_rounded,
+      //   ),
+      //   selectedIcon: Icon(
+      //     Icons.search,
+      //     color: context.primaryColor,
+      //   ),
+      // ),
+      // NavigationDestination(
+      //   label: 'albums'.tr(),
+      //   icon: const Icon(
+      //     Icons.photo_album_outlined,
+      //   ),
+      //   selectedIcon: buildIcon(
+      //     isProcessing: isRefreshingRemoteAlbums,
+      //     icon: Icon(
+      //       Icons.photo_album_rounded,
+      //       color: context.primaryColor,
+      //     ),
+      //   ),
+      // ),
       NavigationDestination(
-        label: 'photos'.tr(),
-        icon: const Icon(
-          Icons.photo_library_outlined,
-        ),
-        selectedIcon: buildIcon(
-          isProcessing: isRefreshingAssets,
-          icon: Icon(
-            Icons.photo_library,
-            color: context.primaryColor,
-          ),
-        ),
-      ),
-      NavigationDestination(
-        label: 'search'.tr(),
-        icon: const Icon(
-          Icons.search_rounded,
-        ),
-        selectedIcon: Icon(
-          Icons.search,
-          color: context.primaryColor,
-        ),
-      ),
-      NavigationDestination(
-        label: 'albums'.tr(),
-        icon: const Icon(
-          Icons.photo_album_outlined,
-        ),
-        selectedIcon: buildIcon(
-          isProcessing: isRefreshingRemoteAlbums,
-          icon: Icon(
-            Icons.photo_album_rounded,
-            color: context.primaryColor,
-          ),
-        ),
-      ),
-      NavigationDestination(
-        label: 'library'.tr(),
+        label: 'Library'.tr(),
         icon: const Icon(
           Icons.space_dashboard_outlined,
         ),
@@ -109,6 +109,19 @@ class TabControllerPage extends HookConsumerWidget {
           isProcessing: isRefreshingAssets,
           icon: Icon(
             Icons.space_dashboard_rounded,
+            color: context.primaryColor,
+          ),
+        ),
+      ),
+      NavigationDestination(
+        label: 'Files'.tr(),
+        icon: const Icon(
+          Icons.photo_album_outlined,
+        ),
+        selectedIcon: buildIcon(
+          isProcessing: isRefreshingRemoteAlbums,
+          icon: Icon(
+            Icons.photo_album_rounded,
             color: context.primaryColor,
           ),
         ),
@@ -146,10 +159,10 @@ class TabControllerPage extends HookConsumerWidget {
     final multiselectEnabled = ref.watch(multiselectProvider);
     return AutoTabsRouter(
       routes: [
+        const LibraryRoute(),
+        const AlbumsRoute(),
         const PhotosRoute(),
         SearchRoute(),
-        const AlbumsRoute(),
-        const LibraryRoute(),
       ],
       duration: const Duration(milliseconds: 600),
       transitionBuilder: (context, child, animation) => FadeTransition(
