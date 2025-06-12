@@ -33,8 +33,8 @@ class TabControllerPage extends HookConsumerWidget {
           Positioned(
             right: -18,
             child: SizedBox(
-              height: 20,
-              width: 20,
+              height: 50,
+              width: 50,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -101,29 +101,49 @@ class TabControllerPage extends HookConsumerWidget {
       //   ),
       // ),
       NavigationDestination(
-        label: 'Library'.tr(),
-        icon: const Icon(
-          Icons.space_dashboard_outlined,
-        ),
+        label: 'Photos'.tr(),
+        icon: Image.asset('assets/navigator/photos.png', width: 50, height: 50, color: Colors.grey, colorBlendMode: BlendMode.srcIn,),
         selectedIcon: buildIcon(
           isProcessing: isRefreshingAssets,
-          icon: Icon(
-            Icons.space_dashboard_rounded,
-            color: context.primaryColor,
+          icon: Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 224, 249),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.all(2),
+            child: Image.asset(
+              'assets/navigator/photos.png',
+              width: 50,
+              height: 50,
+            ),
           ),
+          // Icon(
+          //   Icons.logo_dev,
+          //   color: context.primaryColor,
+          // ),
         ),
       ),
       NavigationDestination(
         label: 'Files'.tr(),
-        icon: const Icon(
-          Icons.photo_album_outlined,
-        ),
+        icon: Image.asset('assets/navigator/files.png', width: 50, height: 50, color: Colors.grey, colorBlendMode: BlendMode.srcIn,),
         selectedIcon: buildIcon(
           isProcessing: isRefreshingRemoteAlbums,
-          icon: Icon(
-            Icons.photo_album_rounded,
-            color: context.primaryColor,
+          icon: Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 223, 224, 249),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.all(2),
+            child: Image.asset(
+              'assets/navigator/files.png',
+              width: 50,
+              height: 50,
+            ),
           ),
+          // Icon(
+          //   Icons.photo_album_rounded,
+          //   color: context.primaryColor,
+          // ),
         ),
       ),
     ];
