@@ -1,0 +1,9 @@
+include: package:neon_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - 'lib/src/router.g.dart'
+
+custom_lint:
+  rules:
+    - avoid_exports: false

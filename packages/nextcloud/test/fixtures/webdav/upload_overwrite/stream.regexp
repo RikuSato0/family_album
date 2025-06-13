@@ -1,0 +1,20 @@
+PUT http://localhost/remote\.php/webdav/test/upload_overwrite\.png
+authorization: Bearer mock
+content-length: 3
+content-type: application/xml
+ocs-apirequest: true
+123
+GET http://localhost/remote\.php/webdav/test/upload_overwrite\.png
+authorization: Bearer mock
+content-type: application/xml
+ocs-apirequest: true
+PUT http://localhost/remote\.php/webdav/test/upload_overwrite\.png
+authorization: Bearer mock
+content-length: 3
+content-type: application/xml
+ocs-apirequest: true
+456
+GET http://localhost/remote\.php/webdav/test/upload_overwrite\.png
+authorization: Bearer mock
+content-type: application/xml
+ocs-apirequest: true

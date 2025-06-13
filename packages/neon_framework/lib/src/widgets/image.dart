@@ -1,0 +1,390 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_blurhash/flutter_blurhash.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
+import 'package:neon_framework/models.dart';
+import 'package:neon_framework/src/bloc/result.dart';
+import 'package:neon_framework/src/utils/account_client_extension.dart';
+import 'package:neon_framework/src/utils/image_utils.dart';
+import 'package:neon_framework/src/utils/request_manager.dart';
+import 'package:neon_framework/src/widgets/error.dart';
+import 'package:neon_framework/src/widgets/linear_progress_indicator.dart';
+import 'package:nextcloud/nextcloud.dart';
+import 'package:nextcloud/utils.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+/// The signature of a function building a widget displaying [error].
+typedef ErrorWidgetBuilder = Widget? Function(BuildContext context, Object? error);
+
+/// A widget painting an Image.
+///
+/// See:
+///  * [NeonApiImage] for an image widget from an Nextcloud API endpoint.
+///  * [NeonUriImage] for an image widget from an arbitrary URL.
+@internal
+class NeonImage extends StatelessWidget {
+  /// Custom image implementation.
+  const NeonImage({
+    required this.image,
+    required this.onRetry,
+    this.isSvgHint = false,
+    this.size,
+    this.fit,
+    this.svgColorFilter,
+    this.errorBuilder,
+    this.blurHash,
+    super.key,
+  });
+
+  /// {@template NeonImage.image}
+  /// The subject containing the image data.
+  /// {@endtemplate}
+  final BehaviorSubject<Result<Uint8List>> image;
+
+  /// {@template NeonImage.onRetry}
+  /// The function called to retry loading the image if it failed.
+  /// {@endtemplate}
+  final VoidCallback onRetry;
+
+  /// {@template NeonImage.svgHint}
+  /// Hint whether the image is an SVG.
+  /// {@endtemplate}
+  final bool isSvgHint;
+
+  /// {@template NeonImage.size}
+  /// Dimensions for the painted image.
+  /// {@endtemplate}
+  final Size? size;
+
+  /// {@template NeonImage.fit}
+  /// How to inscribe the image into the space allocated during layout.
+  /// {@endtemplate}
+  final BoxFit? fit;
+
+  /// {@template NeonImage.svgColorFilter}
+  /// The color filter to use when drawing SVGs.
+  /// {@endtemplate}
+  final ColorFilter? svgColorFilter;
+
+  /// {@template NeonImage.errorBuilder}
+  /// Builder function building the error widget.
+  ///
+  /// Defaults to a [NeonError].
+  /// {@endtemplate}
+  final ErrorWidgetBuilder? errorBuilder;
+
+  /// {@template NeonImage.blurHash}
+  /// The compact representation of an image preview.
+  ///
+  /// See: https://blurha.sh
+  /// {@endtemplate}
+  final String? blurHash;
+
+  @override
+  Widget build(BuildContext context) {
+    return ResultBuilder.behaviorSubject(
+      subject: image,
+      builder: (context, imageResult) {
+        final data = imageResult.data;
+        if (data != null) {
+          try {
+            // TODO: Is this safe enough?
+            if (isSvgHint || utf8.decode(data).contains('<svg')) {
+              return SvgPicture.memory(
+                data,
+                height: size?.height,
+                width: size?.width,
+                fit: fit ?? BoxFit.contain,
+                colorFilter: svgColorFilter,
+              );
+            }
+          } catch (_) {
+            // If the data is not UTF-8
+          }
+
+          return Image.memory(
+            data,
+            height: size?.height,
+            width: size?.width,
+            fit: fit ?? BoxFit.contain,
+            gaplessPlayback: true,
+            errorBuilder: (context, error, stacktrace) => _buildError(context, error),
+          );
+        }
+
+        if (blurHash != null) {
+          return BlurHash(
+            hash: blurHash!,
+            imageFit: fit ?? BoxFit.cover,
+            decodingHeight: size?.height.toInt() ?? 32,
+            decodingWidth: size?.width.toInt() ?? 32,
+          );
+        }
+
+        if (imageResult.hasError) {
+          return _buildError(context, imageResult.error);
+        }
+
+        return SizedBox(
+          width: size?.width,
+          child: const NeonLinearProgressIndicator(),
+        );
+      },
+    );
+  }
+
+  Widget _buildError(BuildContext context, Object? error) =>
+      errorBuilder?.call(context, error) ??
+      NeonError(
+        error,
+        onRetry: onRetry,
+        type: NeonErrorType.iconOnly,
+        iconSize: size?.shortestSide,
+      );
+}
+
+/// A widget painting an Image fetched from the Nextcloud API.
+///
+/// The image is cached in the [RequestManager] to avoid expensive
+/// fetches.
+///
+/// See:
+///  * [NeonImage] for a customized image
+///  * [NeonUriImage] for an image widget from an arbitrary URL.
+class NeonApiImage extends StatefulWidget {
+  /// Creates a new Neon API image fetching the image with the currently active account.
+  const NeonApiImage({
+    required this.getRequest,
+    required this.etag,
+    required this.expires,
+    required this.account,
+    this.isSvgHint = false,
+    this.size,
+    this.fit,
+    this.svgColorFilter,
+    this.errorBuilder,
+    this.blurHash,
+    super.key,
+  });
+
+  /// The account to use for the request.
+  final Account account;
+
+  /// Callback for creating the HTTP request downloading the image data.
+  ///
+  /// Every time it is called a new [http.Request] has to be created.
+  /// Re-using the same will not work when retrying failed requests.
+  final http.Request Function(NextcloudClient) getRequest;
+
+  /// The ETag used for invalidating the cache.
+  final String? etag;
+
+  /// The expiration date used for invalidating the cache.
+  final tz.TZDateTime? expires;
+
+  /// {@macro NeonImage.svgHint}
+  final bool isSvgHint;
+
+  /// {@macro NeonImage.size}
+  final Size? size;
+
+  /// {@macro NeonImage.fit}
+  final BoxFit? fit;
+
+  /// {@macro NeonImage.svgColorFilter}
+  final ColorFilter? svgColorFilter;
+
+  /// {@macro NeonImage.errorBuilder}
+  final ErrorWidgetBuilder? errorBuilder;
+
+  /// {@macro NeonImage.blurHash}
+  final String? blurHash;
+
+  @override
+  State<NeonApiImage> createState() => _NeonApiImageState();
+}
+
+class _NeonApiImageState extends State<NeonApiImage> {
+  final image = BehaviorSubject<Result<Uint8List>>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    unawaited(load());
+  }
+
+  @override
+  void dispose() {
+    unawaited(image.close());
+
+    super.dispose();
+  }
+
+  Future<void> load() async {
+    await RequestManager.instance.wrap(
+      account: widget.account,
+      getCacheHeaders: () async {
+        return {
+          if (widget.etag != null) 'etag': widget.etag!,
+          if (widget.expires != null) 'expires': formatHttpDate(widget.expires!),
+        };
+      },
+      getRequest: () => widget.getRequest(widget.account.client),
+      converter: const BinaryResponseConverter(),
+      unwrap: (data) {
+        try {
+          return utf8.encode(ImageUtils.rewriteSvgDimensions(utf8.decode(data)));
+        } catch (_) {}
+        return data;
+      },
+      subject: image,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NeonImage(
+      image: image,
+      onRetry: load,
+      isSvgHint: widget.isSvgHint,
+      size: widget.size,
+      fit: widget.fit,
+      svgColorFilter: widget.svgColorFilter,
+      errorBuilder: widget.errorBuilder,
+      blurHash: widget.blurHash,
+    );
+  }
+}
+
+/// A widget painting an Image fetched from an arbitrary URI.
+///
+/// The image is cached in the [RequestManager] to avoid expensive
+/// fetches.
+///
+/// See:
+///  * [NeonImage] for a customized image
+///  * [NeonApiImage] for an image widget from an Nextcloud API endpoint.
+class NeonUriImage extends StatefulWidget {
+  /// Creates a new Neon URL image with the active account.
+  const NeonUriImage({
+    required this.uri,
+    required this.account,
+    this.isSvgHint = false,
+    this.size,
+    this.fit,
+    this.svgColorFilter,
+    this.errorBuilder,
+    this.blurHash,
+    super.key,
+  });
+
+  /// The account to use for the request.
+  final Account account;
+
+  /// Image URI.
+  ///
+  /// This can also be a data URI.
+  final Uri uri;
+
+  /// {@macro NeonImage.svgHint}
+  final bool isSvgHint;
+
+  /// {@macro NeonImage.size}
+  final Size? size;
+
+  /// {@macro NeonImage.fit}
+  final BoxFit? fit;
+
+  /// {@macro NeonImage.svgColorFilter}
+  final ColorFilter? svgColorFilter;
+
+  /// {@macro NeonImage.errorBuilder}
+  final ErrorWidgetBuilder? errorBuilder;
+
+  /// {@macro NeonImage.blurHash}
+  final String? blurHash;
+
+  @override
+  State<NeonUriImage> createState() => _NeonUriImageState();
+}
+
+class _NeonUriImageState extends State<NeonUriImage> {
+  final image = BehaviorSubject<Result<Uint8List>>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    unawaited(load());
+  }
+
+  @override
+  void dispose() {
+    unawaited(image.close());
+
+    super.dispose();
+  }
+
+  Future<void> load() async {
+    if (widget.uri.data != null) {
+      var data = widget.uri.data!.contentAsBytes();
+      try {
+        data = utf8.encode(ImageUtils.rewriteSvgDimensions(utf8.decode(data)));
+      } catch (_) {}
+      image.add(Result.success(data));
+      return;
+    }
+
+    final completedUri = widget.account.completeUri(widget.uri);
+    final headers = widget.account.getAuthorizationHeaders(completedUri);
+
+    await RequestManager.instance.wrap(
+      account: widget.account,
+      getCacheHeaders: () async {
+        final response = await widget.account.client.head(
+          completedUri,
+          headers: headers,
+        );
+
+        return response.headers;
+      },
+      getRequest: () {
+        final request = http.Request('GET', completedUri);
+        if (headers != null) {
+          request.headers.addAll(headers);
+        }
+
+        return request;
+      },
+      converter: const BinaryResponseConverter(),
+      unwrap: (data) {
+        try {
+          return utf8.encode(ImageUtils.rewriteSvgDimensions(utf8.decode(data)));
+        } catch (_) {}
+        return data;
+      },
+      subject: image,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NeonImage(
+      image: image,
+      onRetry: load,
+      isSvgHint: widget.isSvgHint || (widget.uri.data?.mimeType.contains('svg') ?? false),
+      size: widget.size,
+      fit: widget.fit,
+      svgColorFilter: widget.svgColorFilter,
+      errorBuilder: widget.errorBuilder,
+      blurHash: widget.blurHash,
+    );
+  }
+}

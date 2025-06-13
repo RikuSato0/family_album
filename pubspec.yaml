@@ -148,6 +148,8 @@ flutter_launcher_icons:
   ios: false
   remove_alpha_ios: true
 
+neon_framework:
+  path: ../neon/packages/neon_framework
 analyzer:
   exclude:
     - openapi/**

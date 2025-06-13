@@ -1,0 +1,10 @@
+PUT http://localhost/ocs/v2\.php/apps/weather_status/api/v1/location
+accept: application/json
+authorization: Bearer mock
+content-type: application/json; charset=utf-8
+ocs-apirequest: true
+\{"address":"Berlin"\}
+GET http://localhost/ocs/v2\.php/apps/weather_status/api/v1/forecast
+accept: application/json
+authorization: Bearer mock
+ocs-apirequest: true

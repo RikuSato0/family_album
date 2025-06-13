@@ -1,0 +1,4 @@
+lib/src/api/**/patches/
+*.openapi.json
+/*.dart
+packages/

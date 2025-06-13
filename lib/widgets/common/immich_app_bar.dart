@@ -20,8 +20,10 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
   final List<Widget>? actions;
   final bool showUploadButton;
+  final String? title;
 
-  const ImmichAppBar({super.key, this.actions, this.showUploadButton = true});
+  const ImmichAppBar(
+      {super.key, this.actions, this.showUploadButton = true, this.title});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -157,15 +159,23 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
             children: [
               Builder(
                 builder: (context) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 3.0),
-                    child: SvgPicture.asset(
-                      context.isDarkTheme
-                          ? 'assets/immich-logo-inline-dark.svg'
-                          : 'assets/immich-logo-inline-light.svg',
-                      height: 40,
-                    ),
-                  );
+                  return title != null
+                      ? Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            title!,
+                            style: context.textTheme.titleLarge,
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 3.0),
+                          child: SvgPicture.asset(
+                            context.isDarkTheme
+                                ? 'assets/immich-logo-inline-dark.svg'
+                                : 'assets/immich-logo-inline-light.svg',
+                            height: 40,
+                          ),
+                        );
                 },
               ),
             ],

@@ -51,7 +51,7 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: const ImmichAppBar(),
+      appBar: const ImmichAppBar(title: "Photos",),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
@@ -78,7 +78,7 @@ class LibraryPage extends HookConsumerWidget {
               child: SearchField(
                 autofocus: false,
                 contentPadding: const EdgeInsets.all(16),
-                hintText: 'search_albums'.tr(),
+                hintText: 'Search'.tr(),
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
@@ -262,6 +262,16 @@ class FamilyCollectionCard extends ConsumerWidget {
                   ),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  '112 items'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -327,6 +337,16 @@ class TravelCollectionCard extends ConsumerWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   'Travel'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  '104 items'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
@@ -592,6 +612,16 @@ class LocalAlbumsCollectionCard extends HookConsumerWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   'on_this_device'.tr(),
+                  style: context.textTheme.titleSmall?.copyWith(
+                    color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  '245 items'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w500,

@@ -102,15 +102,21 @@ class TabControllerPage extends HookConsumerWidget {
       // ),
       NavigationDestination(
         label: 'Photos'.tr(),
-        icon: Image.asset('assets/navigator/photos.png', width: 50, height: 50, color: Colors.grey, colorBlendMode: BlendMode.srcIn,),
+        icon: Image.asset(
+          'assets/navigator/photos.png',
+          width: 50,
+          height: 50,
+          color: Colors.grey,
+          colorBlendMode: BlendMode.srcIn,
+        ),
         selectedIcon: buildIcon(
           isProcessing: isRefreshingAssets,
           icon: Container(
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 224, 249),
+              color: const Color.fromARGB(255, 251, 247, 255),
               borderRadius: BorderRadius.circular(20),
             ),
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             child: Image.asset(
               'assets/navigator/photos.png',
               width: 50,
@@ -125,15 +131,21 @@ class TabControllerPage extends HookConsumerWidget {
       ),
       NavigationDestination(
         label: 'Files'.tr(),
-        icon: Image.asset('assets/navigator/files.png', width: 50, height: 50, color: Colors.grey, colorBlendMode: BlendMode.srcIn,),
+        icon: Image.asset(
+          'assets/navigator/files.png',
+          width: 50,
+          height: 50,
+          color: Colors.grey,
+          colorBlendMode: BlendMode.srcIn,
+        ),
         selectedIcon: buildIcon(
           isProcessing: isRefreshingRemoteAlbums,
           icon: Container(
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 223, 224, 249),
+              color: const Color.fromARGB(255, 251, 247, 255),
               borderRadius: BorderRadius.circular(20),
             ),
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             child: Image.asset(
               'assets/navigator/files.png',
               width: 50,

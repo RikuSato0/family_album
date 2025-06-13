@@ -87,7 +87,7 @@ class AlbumsPage extends HookConsumerWidget {
               CreateAlbumRoute(),
             ),
           ),
-        ],
+        ], title: "Files",
       ),
       body: RefreshIndicator(
         displacement: 70,
