@@ -76,6 +76,8 @@ import 'package:immich_mobile/services/secure_storage.service.dart';
 import 'package:immich_mobile/widgets/asset_grid/asset_grid_data_structure.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../pages/library/filebrowser.page.dart';
+
 part 'router.gr.dart';
 
 final appRouterProvider = Provider(
@@ -139,6 +141,10 @@ class AppRouter extends RootStackRouter {
         ),
         AutoRoute(
           page: LibraryRoute.page,
+          guards: [_authGuard, _duplicateGuard],
+        ),
+        AutoRoute(
+          page: FileBrowserRoute.page,
           guards: [_authGuard, _duplicateGuard],
         ),
         AutoRoute(

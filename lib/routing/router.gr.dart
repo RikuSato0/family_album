@@ -938,6 +938,25 @@ class LibraryRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [FileBrowserPage]
+class FileBrowserRoute extends PageRouteInfo<void> {
+  const FileBrowserRoute({List<PageRouteInfo>? children})
+      : super(
+          FileBrowserRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'FileBrowserRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const FileBrowserPage();
+    },
+  );
+}
+
+/// generated route for
 /// [LocalAlbumsPage]
 class LocalAlbumsRoute extends PageRouteInfo<void> {
   const LocalAlbumsRoute({List<PageRouteInfo>? children})

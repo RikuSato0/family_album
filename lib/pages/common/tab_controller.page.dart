@@ -192,7 +192,7 @@ class TabControllerPage extends HookConsumerWidget {
     return AutoTabsRouter(
       routes: [
         const LibraryRoute(),
-        const PhotosRoute(),
+        const FileBrowserRoute(),
         // const PhotosRoute(),
         // SearchRoute(),
       ],
