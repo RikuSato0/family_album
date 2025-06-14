@@ -192,9 +192,9 @@ class TabControllerPage extends HookConsumerWidget {
     return AutoTabsRouter(
       routes: [
         const LibraryRoute(),
-        const AlbumsRoute(),
         const PhotosRoute(),
-        SearchRoute(),
+        // const PhotosRoute(),
+        // SearchRoute(),
       ],
       duration: const Duration(milliseconds: 600),
       transitionBuilder: (context, child, animation) => FadeTransition(
