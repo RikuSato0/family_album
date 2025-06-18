@@ -2,188 +2,407 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:immich_mobile/domain/models/store.model.dart';
+import 'package:immich_mobile/domain/services/store.service.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
-import 'package:immich_mobile/widgets/settings/advanced_settings.dart';
-import 'package:immich_mobile/widgets/settings/asset_list_settings/asset_list_settings.dart';
-import 'package:immich_mobile/widgets/settings/asset_viewer_settings/asset_viewer_settings.dart';
-import 'package:immich_mobile/widgets/settings/backup_settings/backup_settings.dart';
-import 'package:immich_mobile/widgets/settings/language_settings.dart';
-import 'package:immich_mobile/widgets/settings/networking_settings/networking_settings.dart';
-import 'package:immich_mobile/widgets/settings/notification_setting.dart';
-import 'package:immich_mobile/widgets/settings/preference_settings/preference_setting.dart';
-import 'package:immich_mobile/routing/router.dart';
+import 'package:immich_mobile/constants/locales.dart';
+import 'package:immich_mobile/services/localization.service.dart';
+import 'package:immich_mobile/utils/url_helper.dart';
+import 'package:immich_mobile/widgets/common/immich_toast.dart';
+import 'package:immich_mobile/providers/auth.provider.dart';
+import 'package:immich_mobile/providers/server_info.provider.dart';
+import 'package:openapi/api.dart';
+import 'dart:io';
 
+final Store = StoreService.I;
+
+// Keep minimal enum for router compatibility
 enum SettingSection {
-  advanced(
-    'advanced',
-    Icons.build_outlined,
-    "advanced_settings_tile_subtitle",
-  ),
-  assetViewer(
-    'asset_viewer_settings_title',
-    Icons.image_outlined,
-    "asset_viewer_settings_subtitle",
-  ),
-  backup(
-    'backup_controller_page_backup',
-    Icons.cloud_upload_outlined,
-    "backup_setting_subtitle",
-  ),
-  languages(
-    'setting_languages_title',
-    Icons.language,
-    "setting_languages_subtitle",
-  ),
-  networking(
-    'networking_settings',
-    Icons.wifi,
-    "networking_subtitle",
-  ),
-  notifications(
-    'notifications',
-    Icons.notifications_none_rounded,
-    "setting_notifications_subtitle",
-  ),
-  preferences(
-    'preferences_settings_title',
-    Icons.interests_outlined,
-    "preferences_settings_subtitle",
-  ),
-  timeline(
-    'asset_list_settings_title',
-    Icons.auto_awesome_mosaic_outlined,
-    "asset_list_settings_subtitle",
-  );
+  main('Settings', Icons.settings, 'Main Settings');
 
   final String title;
   final String subtitle;
   final IconData icon;
 
-  Widget get widget => switch (this) {
-        SettingSection.advanced => const AdvancedSettings(),
-        SettingSection.assetViewer => const AssetViewerSettings(),
-        SettingSection.backup => const BackupSettings(),
-        SettingSection.languages => const LanguageSettings(),
-        SettingSection.networking => const NetworkingSettings(),
-        SettingSection.notifications => const NotificationSetting(),
-        SettingSection.preferences => const PreferenceSetting(),
-        SettingSection.timeline => const AssetListSettings(),
-      };
-
   const SettingSection(this.title, this.icon, this.subtitle);
 }
 
 @RoutePage()
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends HookConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    context.locale;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentLocale = context.locale;
+    final languageTextController = useTextEditingController(
+      text: locales.keys.firstWhere(
+        (countryName) => locales[countryName] == currentLocale,
+      ),
+    );
+    final apiUrlController = useTextEditingController();
+    final selectedLocale = useState<Locale>(currentLocale);
+    final isLoadingApi = useState<bool>(false);
+    final apiConnectionStatus = useState<String?>(null);
+
+    // Load saved API URL on init
+    useEffect(() {
+      final savedUrl = getServerUrl();
+      if (savedUrl != null) {
+        apiUrlController.text = savedUrl;
+      }
+      return null;
+    }, []);
+
+    String? _validateApiInput(String? url) {
+      if (url == null || url.isEmpty) {
+        return 'login_form_server_empty'.tr();
+      }
+
+      if ((!url.startsWith("https://") && !url.startsWith("http://"))) {
+        return 'login_form_server_error_invalid_url'.tr();
+      }
+
+      return null;
+    }
+
+    Future<void> testAndSaveApiUrl() async {
+      if (_validateApiInput(apiUrlController.text) != null) {
+        ImmichToast.show(
+          context: context,
+          msg: _validateApiInput(apiUrlController.text)!,
+          toastType: ToastType.error,
+        );
+        return;
+      }
+
+      final sanitizeServerUrl = sanitizeUrl(apiUrlController.text);
+      final serverUrl = punycodeEncodeUrl(sanitizeServerUrl);
+
+      if (serverUrl.isEmpty) {
+        ImmichToast.show(
+          context: context,
+          msg: "login_form_server_empty".tr(),
+          toastType: ToastType.error,
+        );
+        return;
+      }
+
+      try {
+        isLoadingApi.value = true;
+        apiConnectionStatus.value = null;
+
+        // Test the connection first (same as login form)
+        final endpoint =
+            await ref.read(authProvider.notifier).validateServerUrl(serverUrl);
+
+        // Fetch and load server config and features
+        await ref.read(serverInfoProvider.notifier).getServerInfo();
+
+        final serverInfo = ref.read(serverInfoProvider);
+
+        // Save the URL to persistent storage after successful test
+        Store.put(StoreKey.serverEndpoint, serverUrl);
+
+        apiConnectionStatus.value =
+            "Connected successfully to ${serverInfo.serverVersion.toString()}";
+
+        ImmichToast.show(
+          context: context,
+          msg: 'API endpoint saved and tested successfully',
+          toastType: ToastType.info,
+        );
+      } on ApiException catch (e) {
+        apiConnectionStatus.value =
+            "Connection failed: ${e.message ?? 'API Exception'}";
+        ImmichToast.show(
+          context: context,
+          msg: e.message ?? 'login_form_api_exception'.tr(),
+          toastType: ToastType.error,
+        );
+      } on HandshakeException {
+        apiConnectionStatus.value = "Connection failed: SSL Handshake error";
+        ImmichToast.show(
+          context: context,
+          msg: 'login_form_handshake_exception'.tr(),
+          toastType: ToastType.error,
+        );
+      } catch (e) {
+        apiConnectionStatus.value = "Connection failed: ${e.toString()}";
+        ImmichToast.show(
+          context: context,
+          msg: 'login_form_server_error'.tr(),
+          toastType: ToastType.error,
+        );
+      } finally {
+        isLoadingApi.value = false;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
         title: const Text('settings').tr(),
       ),
-      body: context.isMobile ? _MobileLayout() : _TabletLayout(),
-    );
-  }
-}
-
-class _MobileLayout extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 10.0),
-      children: SettingSection.values
-          .map(
-            (setting) => Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Language Settings Section
+            Card(
+              elevation: 0,
+              color: context.colorScheme.surfaceContainer,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
               ),
-              child: Card(
-                elevation: 0,
-                clipBehavior: Clip.antiAlias,
-                color: context.colorScheme.surfaceContainer,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
-                ),
-                margin: const EdgeInsets.symmetric(vertical: 4.0),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                  ),
-                  leading: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(Radius.circular(16)),
-                      color: context.isDarkTheme
-                          ? Colors.black26
-                          : Colors.white.withAlpha(100),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(12)),
+                            color: context.isDarkTheme
+                                ? Colors.black26
+                                : Colors.white.withAlpha(100),
+                          ),
+                          padding: const EdgeInsets.all(12.0),
+                          child:
+                              Icon(Icons.language, color: context.primaryColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'setting_languages_title',
+                              style: context.textTheme.titleMedium!.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.primaryColor,
+                              ),
+                            ).tr(),
+                            Text(
+                              'setting_languages_subtitle',
+                              style: context.textTheme.labelMedium,
+                            ).tr(),
+                          ],
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.all(16.0),
-                    child: Icon(setting.icon, color: context.primaryColor),
-                  ),
-                  title: Text(
-                    setting.title,
-                    style: context.textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: context.primaryColor,
+                    const SizedBox(height: 16),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return DropdownMenu(
+                          width: constraints.maxWidth,
+                          inputDecorationTheme: InputDecorationTheme(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.only(left: 16),
+                          ),
+                          menuStyle: MenuStyle(
+                            shape: WidgetStatePropertyAll<OutlinedBorder>(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            backgroundColor: WidgetStatePropertyAll<Color>(
+                              context.colorScheme.surfaceContainer,
+                            ),
+                          ),
+                          menuHeight: context.height * 0.5,
+                          hintText: "Languages",
+                          label: const Text('Languages'),
+                          dropdownMenuEntries: locales.keys
+                              .map(
+                                (countryName) => DropdownMenuEntry(
+                                  value: locales[countryName],
+                                  label: countryName,
+                                ),
+                              )
+                              .toList(),
+                          controller: languageTextController,
+                          onSelected: (value) {
+                            if (value != null) {
+                              selectedLocale.value = value;
+                            }
+                          },
+                        );
+                      },
                     ),
-                  ).tr(),
-                  subtitle: Text(
-                    setting.subtitle,
-                    style: context.textTheme.labelLarge,
-                  ).tr(),
-                  onTap: () =>
-                      context.pushRoute(SettingsSubRoute(section: setting)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: selectedLocale.value == currentLocale
+                            ? null
+                            : () {
+                                context.setLocale(selectedLocale.value);
+                                loadTranslations();
+                              },
+                        child: const Text('setting_languages_apply').tr(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          )
-          .toList(),
-    );
-  }
-}
 
-class _TabletLayout extends HookWidget {
-  @override
-  Widget build(BuildContext context) {
-    final selectedSection =
-        useState<SettingSection>(SettingSection.values.first);
+            const SizedBox(height: 16),
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: CustomScrollView(
-            slivers: SettingSection.values
-                .map(
-                  (s) => SliverToBoxAdapter(
-                    child: ListTile(
-                      title: Text(s.title).tr(),
-                      leading: Icon(s.icon),
-                      selected: s.index == selectedSection.value.index,
-                      selectedColor: context.primaryColor,
-                      selectedTileColor: context.themeData.highlightColor,
-                      onTap: () => selectedSection.value = s,
+            // API Endpoint Settings Section
+            Card(
+              elevation: 0,
+              color: context.colorScheme.surfaceContainer,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(12)),
+                            color: context.isDarkTheme
+                                ? Colors.black26
+                                : Colors.white.withAlpha(100),
+                          ),
+                          padding: const EdgeInsets.all(12.0),
+                          child: Icon(Icons.api, color: context.primaryColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'API Endpoint',
+                              style: context.textTheme.titleMedium!.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: context.primaryColor,
+                              ),
+                            ),
+                            Text(
+                              'Configure server API endpoint',
+                              style: context.textTheme.labelMedium,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                )
-                .toList(),
-          ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: apiUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'login_form_endpoint_url'.tr(),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        hintText: 'login_form_endpoint_hint'.tr(),
+                        errorMaxLines: 4,
+                      ),
+                      validator: _validateApiInput,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => testAndSaveApiUrl(),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            isLoadingApi.value ? null : testAndSaveApiUrl,
+                        icon: isLoadingApi.value
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.save),
+                        label: Text(isLoadingApi.value
+                            ? 'Testing...'
+                            : 'Test & Save API Endpoint'),
+                      ),
+                    ),
+                    if (apiConnectionStatus.value != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color:
+                              apiConnectionStatus.value!.startsWith('Connected')
+                                  ? (context.isDarkTheme
+                                      ? Colors.green.shade800
+                                      : Colors.green.shade100)
+                                  : (context.isDarkTheme
+                                      ? Colors.red.shade800
+                                      : Colors.red.shade100),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: apiConnectionStatus.value!
+                                    .startsWith('Connected')
+                                ? (context.isDarkTheme
+                                    ? Colors.green.shade600
+                                    : Colors.green.shade300)
+                                : (context.isDarkTheme
+                                    ? Colors.red.shade600
+                                    : Colors.red.shade300),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              apiConnectionStatus.value!.startsWith('Connected')
+                                  ? Icons.check_circle
+                                  : Icons.error,
+                              color: apiConnectionStatus.value!
+                                      .startsWith('Connected')
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                apiConnectionStatus.value!,
+                                style: TextStyle(
+                                  color: apiConnectionStatus.value!
+                                          .startsWith('Connected')
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        const VerticalDivider(width: 1),
-        Expanded(
-          flex: 4,
-          child: selectedSection.value.widget,
-        ),
-      ],
+      ),
     );
   }
 }
 
+// Router compatibility - redirects to main settings
 @RoutePage()
 class SettingsSubPage extends StatelessWidget {
   const SettingsSubPage(this.section, {super.key});
@@ -192,13 +411,7 @@ class SettingsSubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.locale;
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        title: Text(section.title).tr(),
-      ),
-      body: section.widget,
-    );
+    // Redirect to main settings page
+    return const SettingsPage();
   }
 }

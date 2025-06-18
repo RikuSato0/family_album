@@ -5,7 +5,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-// import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/extensions/asyncvalue_extensions.dart';
@@ -42,8 +41,7 @@ class LibraryPage extends HookConsumerWidget {
         ref.read(albumProvider.notifier).searchAlbums(searchTerm, mode);
       });
     }
-    // final trashEnabled =
-    //     ref.watch(serverInfoProvider.select((v) => v.serverFeatures.trash));
+
     clearSearch() {
       filterMode.value = QuickFilterMode.all;
       searchController.clear();
@@ -51,7 +49,12 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: const ImmichAppBar(title: "Photos",),
+      appBar: const ImmichAppBar(
+        title: "Photos",
+        showProfileButton: false,
+        showUploadButton: true,
+        showRefreshButton: false,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
@@ -100,14 +103,13 @@ class LibraryPage extends HookConsumerWidget {
               children: [
                 RecentCollectionCard(),
                 FamilyCollectionCard(),
-                TravelCollectionCard(),
-                TravelCollectionCard(),
-                TravelCollectionCard(),
-                LocalAlbumsCollectionCard(),
+                FavoritesCollectionCard(),
+                ImagesCollectionCard(),
+                VideosCollectionCard(),
+                PlacesCollectionCard(),
               ],
             ),
             const SizedBox(height: 12),
-            // const QuickAccessButtons(),
             const SizedBox(
               height: 32,
             ),
@@ -117,12 +119,12 @@ class LibraryPage extends HookConsumerWidget {
     );
   }
 }
+
 class RecentCollectionCard extends ConsumerWidget {
   const RecentCollectionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final people = ref.watch(getAllPeopleProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -130,7 +132,10 @@ class RecentCollectionCard extends ConsumerWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          onTap: () {
+            // Navigate to recent photos
+            // context.pushRoute(const RecentPhotosRoute());
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -141,52 +146,69 @@ class RecentCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     colors: [
-                      context.colorScheme.primary.withAlpha(30),
-                      context.colorScheme.primary.withAlpha(25),
+                      Colors.blue.withAlpha(30),
+                      Colors.blue.withAlpha(25),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                child: people.widgetWhen(
-                  onLoading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  onData: (people) {
-                    return GridView.count(
-                      crossAxisCount: 2,
-                      padding: const EdgeInsets.all(12),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: people.take(4).map((person) {
-                        return CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            getFaceThumbnailUrl(person.id),
-                            headers: ApiService.getRequestHeaders(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/recent.png'),
+                            fit: BoxFit.cover,
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.access_time_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Recents'.tr(),
+                  'Recent'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
                   '285 items'.tr(),
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: context.colorScheme.onSurface,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -198,12 +220,12 @@ class RecentCollectionCard extends ConsumerWidget {
     );
   }
 }
+
 class FamilyCollectionCard extends ConsumerWidget {
   const FamilyCollectionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final people = ref.watch(getAllPeopleProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -222,52 +244,69 @@ class FamilyCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     colors: [
-                      context.colorScheme.primary.withAlpha(30),
-                      context.colorScheme.primary.withAlpha(25),
+                      Colors.pink.withAlpha(30),
+                      Colors.pink.withAlpha(25),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                child: people.widgetWhen(
-                  onLoading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  onData: (people) {
-                    return GridView.count(
-                      crossAxisCount: 2,
-                      padding: const EdgeInsets.all(12),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: people.take(4).map((person) {
-                        return CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            getFaceThumbnailUrl(person.id),
-                            headers: ApiService.getRequestHeaders(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/family.png'),
+                            fit: BoxFit.cover,
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.family_restroom_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
                   'Family'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
                   '112 items'.tr(),
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: context.colorScheme.onSurface,
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -279,12 +318,12 @@ class FamilyCollectionCard extends ConsumerWidget {
     );
   }
 }
-class TravelCollectionCard extends ConsumerWidget {
-  const TravelCollectionCard({super.key});
+
+class FavoritesCollectionCard extends ConsumerWidget {
+  const FavoritesCollectionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final people = ref.watch(getAllPeopleProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -292,7 +331,10 @@ class TravelCollectionCard extends ConsumerWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          onTap: () {
+            // Navigate to favorites
+            // context.pushRoute(const FavoritesRoute());
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -303,52 +345,69 @@ class TravelCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     colors: [
-                      context.colorScheme.primary.withAlpha(30),
-                      context.colorScheme.primary.withAlpha(25),
+                      Colors.red.withAlpha(30),
+                      Colors.red.withAlpha(25),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                child: people.widgetWhen(
-                  onLoading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  onData: (people) {
-                    return GridView.count(
-                      crossAxisCount: 2,
-                      padding: const EdgeInsets.all(12),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: people.take(4).map((person) {
-                        return CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            getFaceThumbnailUrl(person.id),
-                            headers: ApiService.getRequestHeaders(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/favorites.png'),
+                            fit: BoxFit.cover,
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  'Travel'.tr(),
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: context.colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.favorite_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  '104 items'.tr(),
+                  'Favorites'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4.0),
+                child: Text(
+                  '67 items'.tr(),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -360,138 +419,12 @@ class TravelCollectionCard extends ConsumerWidget {
     );
   }
 }
-class QuickAccessButtons extends ConsumerWidget {
-  const QuickAccessButtons({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final partners = ref.watch(partnerSharedWithProvider);
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: context.colorScheme.onSurface.withAlpha(10),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [
-            context.colorScheme.primary.withAlpha(10),
-            context.colorScheme.primary.withAlpha(15),
-            context.colorScheme.primary.withAlpha(20),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: ListView(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          ListTile(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(20),
-                topRight: const Radius.circular(20),
-                bottomLeft: Radius.circular(partners.isEmpty ? 20 : 0),
-                bottomRight: Radius.circular(partners.isEmpty ? 20 : 0),
-              ),
-            ),
-            leading: const Icon(
-              Icons.folder_outlined,
-              size: 26,
-            ),
-            title: Text(
-              'folders'.tr(),
-              style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            onTap: () => context.pushRoute(FolderRoute()),
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.lock_outline_rounded,
-              size: 26,
-            ),
-            title: Text(
-              'locked_folder'.tr(),
-              style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            onTap: () => context.pushRoute(const LockedRoute()),
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.group_outlined,
-              size: 26,
-            ),
-            title: Text(
-              'partners'.tr(),
-              style: context.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            onTap: () => context.pushRoute(const PartnerRoute()),
-          ),
-          PartnerList(partners: partners),
-        ],
-      ),
-    );
-  }
-}
-
-class PartnerList extends ConsumerWidget {
-  const PartnerList({super.key, required this.partners});
-
-  final List<UserDto> partners;
+class ImagesCollectionCard extends ConsumerWidget {
+  const ImagesCollectionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: partners.length,
-      shrinkWrap: true,
-      itemBuilder: (context, index) {
-        final partner = partners[index];
-        final isLastItem = index == partners.length - 1;
-        return ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(isLastItem ? 20 : 0),
-              bottomRight: Radius.circular(isLastItem ? 20 : 0),
-            ),
-          ),
-          contentPadding: const EdgeInsets.only(
-            left: 12.0,
-            right: 18.0,
-          ),
-          leading: userAvatar(context, partner, radius: 16),
-          title: const Text(
-            "partner_list_user_photos",
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-          ).tr(
-            namedArgs: {
-              'user': partner.name,
-            },
-          ),
-          onTap: () => context.pushRoute(
-            (PartnerDetailRoute(partner: partner)),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class PeopleCollectionCard extends ConsumerWidget {
-  const PeopleCollectionCard({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final people = ref.watch(getAllPeopleProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -499,7 +432,10 @@ class PeopleCollectionCard extends ConsumerWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => context.pushRoute(const PeopleCollectionRoute()),
+          onTap: () {
+            // Navigate to images only
+            // context.pushRoute(const ImagesRoute());
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -510,42 +446,69 @@ class PeopleCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     colors: [
-                      context.colorScheme.primary.withAlpha(30),
-                      context.colorScheme.primary.withAlpha(25),
+                      Colors.green.withAlpha(30),
+                      Colors.green.withAlpha(25),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                child: people.widgetWhen(
-                  onLoading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  onData: (people) {
-                    return GridView.count(
-                      crossAxisCount: 2,
-                      padding: const EdgeInsets.all(12),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: people.take(4).map((person) {
-                        return CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            getFaceThumbnailUrl(person.id),
-                            headers: ApiService.getRequestHeaders(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/images.png'),
+                            fit: BoxFit.cover,
                           ),
-                        );
-                      }).toList(),
-                    );
-                  },
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.image_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'people'.tr(),
+                  'Images'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4.0),
+                child: Text(
+                  '1,847 items'.tr(),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -558,13 +521,11 @@ class PeopleCollectionCard extends ConsumerWidget {
   }
 }
 
-class LocalAlbumsCollectionCard extends HookConsumerWidget {
-  const LocalAlbumsCollectionCard({super.key});
+class VideosCollectionCard extends ConsumerWidget {
+  const VideosCollectionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final albums = ref.watch(localAlbumsProvider);
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -572,58 +533,83 @@ class LocalAlbumsCollectionCard extends HookConsumerWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => context.pushRoute(
-            const LocalAlbumsRoute(),
-          ),
+          onTap: () {
+            // Navigate to videos only
+            // context.pushRoute(const VideosRoute());
+          },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              Container(
                 height: size,
                 width: size,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(20)),
-                    gradient: LinearGradient(
-                      colors: [
-                        context.colorScheme.primary.withAlpha(30),
-                        context.colorScheme.primary.withAlpha(25),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.purple.withAlpha(30),
+                      Colors.purple.withAlpha(25),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    padding: const EdgeInsets.all(12),
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: albums.take(4).map((album) {
-                      return AlbumThumbnailCard(
-                        album: album,
-                        showTitle: false,
-                      );
-                    }).toList(),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/videos.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.videocam_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'on_this_device'.tr(),
+                  'Videos'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '245 items'.tr(),
-                  style: context.textTheme.titleSmall?.copyWith(
-                    color: context.colorScheme.onSurface,
+                  '438 items'.tr(),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -638,6 +624,7 @@ class LocalAlbumsCollectionCard extends HookConsumerWidget {
 
 class PlacesCollectionCard extends StatelessWidget {
   const PlacesCollectionCard({super.key});
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -647,44 +634,86 @@ class PlacesCollectionCard extends StatelessWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => context.pushRoute(
-            PlacesCollectionRoute(
-              currentLocation: null,
-            ),
-          ),
+          onTap: () => 
+          {},
+          //  context.pushRoute(
+            // PlacesCollectionRoute(
+            //   currentLocation: null,
+            // ),
+          // ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              Container(
                 height: size,
                 width: size,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(20)),
-                    color:
-                        context.colorScheme.secondaryContainer.withAlpha(100),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.orange.withAlpha(30),
+                      Colors.orange.withAlpha(25),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
-                  child: IgnorePointer(
-                    child: MapThumbnail(
-                      zoom: 8,
-                      centre: const LatLng(
-                        21.44950,
-                        -157.91959,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Background image
+                      Container(
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/library/places.png'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                      showAttribution: false,
-                      themeMode: context.isDarkTheme
-                          ? ThemeMode.dark
-                          : ThemeMode.light,
-                    ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withAlpha(0),
+                              Colors.black.withAlpha(50),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                      // Icon overlay
+                      const Positioned(
+                        bottom: 12,
+                        right: 12,
+                        child: Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'places'.tr(),
+                  'Places'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4.0),
+                child: Text(
+                  '23 cities'.tr(),
+                  style: context.textTheme.bodySmall?.copyWith(
+                    color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

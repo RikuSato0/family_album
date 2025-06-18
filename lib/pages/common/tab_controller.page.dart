@@ -7,10 +7,13 @@ import 'package:immich_mobile/providers/album/album.provider.dart';
 import 'package:immich_mobile/providers/asset_viewer/scroll_notifier.provider.dart';
 import 'package:immich_mobile/providers/multiselect.provider.dart';
 import 'package:immich_mobile/providers/search/search_input_focus.provider.dart';
+import 'package:immich_mobile/providers/user.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/providers/asset.provider.dart';
 import 'package:immich_mobile/providers/haptic_feedback.provider.dart';
 import 'package:immich_mobile/providers/tab.provider.dart';
+import 'package:immich_mobile/widgets/common/app_bar_dialog/app_bar_dialog.dart';
+import 'package:immich_mobile/widgets/common/user_circle_avatar.dart';
 
 @RoutePage()
 class TabControllerPage extends HookConsumerWidget {
@@ -47,18 +50,41 @@ class TabControllerPage extends HookConsumerWidget {
       );
     }
 
+    Widget navIconWrapper(Widget icon) {
+      return SizedBox(
+        width: 50,
+        height: 50,
+        child: Center(child: icon),
+      );
+    }
+
     void onNavigationSelected(TabsRouter router, int index) {
-      // On Photos page menu tapped
+      ref.read(hapticFeedbackProvider.notifier).selectionClick();
+
+      // If "Settings" tab clicked
+      if (index == 2) {
+        context.pushRoute(const SettingsRoute());
+        return; // Do not change active tab
+      }
+
+      // If "Profile" tab clicked
+      if (index == 3) {
+        showDialog(
+          context: context,
+          builder: (ctx) => const ImmichAppBarDialog(),
+        );
+        return; // Do not change active tab
+      }
+
+      // Handle actual tab navigation
       if (router.activeIndex == 0 && index == 0) {
         scrollToTopNotifierProvider.scrollToTop();
       }
 
-      // On Search page tapped
       if (router.activeIndex == 1 && index == 1) {
         ref.read(searchInputFocusProvider).requestFocus();
       }
 
-      ref.read(hapticFeedbackProvider.notifier).selectionClick();
       router.setActiveIndex(index);
       ref.read(tabProvider.notifier).state = TabEnum.values[index];
     }
@@ -100,62 +126,96 @@ class TabControllerPage extends HookConsumerWidget {
       //     ),
       //   ),
       // ),
-      NavigationDestination(
+NavigationDestination(
         label: 'Photos'.tr(),
-        icon: Image.asset(
-          'assets/navigator/photos.png',
-          width: 50,
-          height: 50,
-          color: Colors.grey,
-          colorBlendMode: BlendMode.srcIn,
+        icon: navIconWrapper(
+          Image.asset(
+            'assets/navigator/photos.png',
+            color: Colors.grey,
+            colorBlendMode: BlendMode.srcIn,
+          ),
         ),
-        selectedIcon: buildIcon(
-          isProcessing: isRefreshingAssets,
-          icon: Container(
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 251, 247, 255),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            child: Image.asset(
-              'assets/navigator/photos.png',
-              width: 50,
-              height: 50,
+        selectedIcon: navIconWrapper(
+          buildIcon(
+            isProcessing: isRefreshingAssets,
+            icon: Container(
+              // decoration: BoxDecoration(
+              //   color: const Color.fromARGB(255, 251, 247, 255),
+              //   borderRadius: BorderRadius.circular(20),
+              // ),
+              padding: const EdgeInsets.all(4),
+              child: Image.asset('assets/navigator/photos.png'),
             ),
           ),
-          // Icon(
-          //   Icons.logo_dev,
-          //   color: context.primaryColor,
-          // ),
         ),
       ),
       NavigationDestination(
         label: 'Files'.tr(),
-        icon: Image.asset(
-          'assets/navigator/files.png',
-          width: 50,
-          height: 50,
-          color: Colors.grey,
-          colorBlendMode: BlendMode.srcIn,
+        icon: navIconWrapper(
+          Image.asset(
+            'assets/navigator/files.png',
+            color: Colors.grey,
+            colorBlendMode: BlendMode.srcIn,
+          ),
         ),
-        selectedIcon: buildIcon(
-          isProcessing: isRefreshingRemoteAlbums,
-          icon: Container(
+        selectedIcon: navIconWrapper(
+          buildIcon(
+            isProcessing: isRefreshingRemoteAlbums,
+            icon: Container(
+              // decoration: BoxDecoration(
+              //   color: const Color.fromARGB(255, 251, 247, 255),
+              //   borderRadius: BorderRadius.circular(20),
+              // ),
+              padding: const EdgeInsets.all(4),
+              child: Image.asset('assets/navigator/files.png'),
+            ),
+          ),
+        ),
+      ),
+      NavigationDestination(
+        label: 'Settings'.tr(),
+        icon: navIconWrapper(
+          const Icon(Icons.settings, color: Colors.grey),
+        ),
+        selectedIcon: navIconWrapper(
+          Container(
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 251, 247, 255),
               borderRadius: BorderRadius.circular(20),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            child: Image.asset(
-              'assets/navigator/files.png',
-              width: 50,
-              height: 50,
-            ),
+            padding: const EdgeInsets.all(4),
+            child: Icon(Icons.settings, color: context.primaryColor),
           ),
-          // Icon(
-          //   Icons.photo_album_rounded,
-          //   color: context.primaryColor,
-          // ),
+        ),
+      ),
+      NavigationDestination(
+        label: 'Profile'.tr(),
+        icon: navIconWrapper(
+          Consumer(
+            builder: (context, ref, _) {
+              final user = ref.watch(currentUserProvider);
+              return user == null
+                  ? const Icon(Icons.person_outline, color: Colors.grey)
+                  : UserCircleAvatar(radius: 17, size: 34, user: user);
+            },
+          ),
+        ),
+        selectedIcon: navIconWrapper(
+          Consumer(
+            builder: (context, ref, _) {
+              final user = ref.watch(currentUserProvider);
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 251, 247, 255),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: user == null
+                    ? Icon(Icons.person, color: context.primaryColor)
+                    : UserCircleAvatar(radius: 17, size: 34, user: user),
+              );
+            },
+          ),
         ),
       ),
     ];
@@ -211,7 +271,19 @@ class TabControllerPage extends HookConsumerWidget {
           canPop: tabsRouter.activeIndex == 0,
           onPopInvokedWithResult: (didPop, _) =>
               !didPop ? tabsRouter.setActiveIndex(0) : null,
-          child: Scaffold(
+          child: 
+          Theme(
+            data: Theme.of(context).copyWith(
+              navigationBarTheme: const NavigationBarThemeData(
+                indicatorColor: Colors.transparent,
+                overlayColor: MaterialStatePropertyAll(Colors.transparent),
+              ),
+              navigationRailTheme: const NavigationRailThemeData(
+                indicatorColor: Colors.transparent,
+              ),
+            ),
+            child:
+          Scaffold(
             resizeToAvoidBottomInset: false,
             body: isScreenLandscape
                 ? Row(
@@ -225,6 +297,7 @@ class TabControllerPage extends HookConsumerWidget {
             bottomNavigationBar: multiselectEnabled || isScreenLandscape
                 ? null
                 : bottomNavigationBar(tabsRouter),
+          ),
           ),
         );
       },

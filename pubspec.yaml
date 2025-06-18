@@ -120,6 +120,8 @@ flutter:
     - assets/
     - assets/navigator/
     - assets/translations/
+    - assets/library/
+
   fonts:
     - family: Inconsolata
       fonts:

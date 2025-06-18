@@ -20,10 +20,18 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
   final List<Widget>? actions;
   final bool showUploadButton;
+  final bool showProfileButton;
+  final bool showRefreshButton;
   final String? title;
 
-  const ImmichAppBar(
-      {super.key, this.actions, this.showUploadButton = true, this.title});
+  const ImmichAppBar({
+    super.key,
+    this.actions,
+    this.showUploadButton = true,
+    this.title,
+    this.showProfileButton = true,
+    this.showRefreshButton = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -191,19 +199,21 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
           ),
         if (kDebugMode)
-          IconButton(
-            onPressed: () => ref.read(backgroundSyncProvider).sync(),
-            icon: const Icon(Icons.sync),
-          ),
+          if (showRefreshButton)
+            IconButton(
+              onPressed: () => ref.read(backgroundSyncProvider).sync(),
+              icon: const Icon(Icons.sync),
+            ),
         if (showUploadButton)
           Padding(
             padding: const EdgeInsets.only(right: 20),
             child: buildBackupIndicator(),
           ),
-        Padding(
-          padding: const EdgeInsets.only(right: 20),
-          child: buildProfileIndicator(),
-        ),
+        if (showProfileButton)
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: buildProfileIndicator(),
+          ),
       ],
     );
   }
