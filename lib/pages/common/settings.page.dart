@@ -256,145 +256,145 @@ class SettingsPage extends HookConsumerWidget {
             const SizedBox(height: 16),
 
             // API Endpoint Settings Section
-            Card(
-              elevation: 0,
-              color: context.colorScheme.surfaceContainer,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(12)),
-                            color: context.isDarkTheme
-                                ? Colors.black26
-                                : Colors.white.withAlpha(100),
-                          ),
-                          padding: const EdgeInsets.all(12.0),
-                          child: Icon(Icons.api, color: context.primaryColor),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'API Endpoint',
-                              style: context.textTheme.titleMedium!.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: context.primaryColor,
-                              ),
-                            ),
-                            Text(
-                              'Configure server API endpoint',
-                              style: context.textTheme.labelMedium,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: apiUrlController,
-                      decoration: InputDecoration(
-                        labelText: 'login_form_endpoint_url'.tr(),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        hintText: 'login_form_endpoint_hint'.tr(),
-                        errorMaxLines: 4,
-                      ),
-                      validator: _validateApiInput,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => testAndSaveApiUrl(),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            isLoadingApi.value ? null : testAndSaveApiUrl,
-                        icon: isLoadingApi.value
-                            ? const SizedBox(
-                                height: 16,
-                                width: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.save),
-                        label: Text(isLoadingApi.value
-                            ? 'Testing...'
-                            : 'Test & Save API Endpoint'),
-                      ),
-                    ),
-                    if (apiConnectionStatus.value != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color:
-                              apiConnectionStatus.value!.startsWith('Connected')
-                                  ? (context.isDarkTheme
-                                      ? Colors.green.shade800
-                                      : Colors.green.shade100)
-                                  : (context.isDarkTheme
-                                      ? Colors.red.shade800
-                                      : Colors.red.shade100),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: apiConnectionStatus.value!
-                                    .startsWith('Connected')
-                                ? (context.isDarkTheme
-                                    ? Colors.green.shade600
-                                    : Colors.green.shade300)
-                                : (context.isDarkTheme
-                                    ? Colors.red.shade600
-                                    : Colors.red.shade300),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              apiConnectionStatus.value!.startsWith('Connected')
-                                  ? Icons.check_circle
-                                  : Icons.error,
-                              color: apiConnectionStatus.value!
-                                      .startsWith('Connected')
-                                  ? Colors.green.shade700
-                                  : Colors.red.shade700,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                apiConnectionStatus.value!,
-                                style: TextStyle(
-                                  color: apiConnectionStatus.value!
-                                          .startsWith('Connected')
-                                      ? Colors.green.shade700
-                                      : Colors.red.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            // Card(
+            //   elevation: 0,
+            //   color: context.colorScheme.surfaceContainer,
+            //   shape: const RoundedRectangleBorder(
+            //     borderRadius: BorderRadius.all(Radius.circular(16)),
+            //   ),
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(16.0),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Row(
+            //           children: [
+            //             Container(
+            //               decoration: BoxDecoration(
+            //                 borderRadius:
+            //                     const BorderRadius.all(Radius.circular(12)),
+            //                 color: context.isDarkTheme
+            //                     ? Colors.black26
+            //                     : Colors.white.withAlpha(100),
+            //               ),
+            //               padding: const EdgeInsets.all(12.0),
+            //               child: Icon(Icons.api, color: context.primaryColor),
+            //             ),
+            //             const SizedBox(width: 12),
+            //             Column(
+            //               crossAxisAlignment: CrossAxisAlignment.start,
+            //               children: [
+            //                 Text(
+            //                   'API Endpoint',
+            //                   style: context.textTheme.titleMedium!.copyWith(
+            //                     fontWeight: FontWeight.w600,
+            //                     color: context.primaryColor,
+            //                   ),
+            //                 ),
+            //                 Text(
+            //                   'Configure server API endpoint',
+            //                   style: context.textTheme.labelMedium,
+            //                 ),
+            //               ],
+            //             ),
+            //           ],
+            //         ),
+            //         const SizedBox(height: 16),
+            //         TextFormField(
+            //           controller: apiUrlController,
+            //           decoration: InputDecoration(
+            //             labelText: 'login_form_endpoint_url'.tr(),
+            //             border: OutlineInputBorder(
+            //               borderRadius: BorderRadius.circular(12),
+            //             ),
+            //             hintText: 'login_form_endpoint_hint'.tr(),
+            //             errorMaxLines: 4,
+            //           ),
+            //           validator: _validateApiInput,
+            //           autovalidateMode: AutovalidateMode.onUserInteraction,
+            //           keyboardType: TextInputType.url,
+            //           autocorrect: false,
+            //           textInputAction: TextInputAction.done,
+            //           onFieldSubmitted: (_) => testAndSaveApiUrl(),
+            //         ),
+            //         const SizedBox(height: 12),
+            //         SizedBox(
+            //           width: double.infinity,
+            //           child: ElevatedButton.icon(
+            //             onPressed:
+            //                 isLoadingApi.value ? null : testAndSaveApiUrl,
+            //             icon: isLoadingApi.value
+            //                 ? const SizedBox(
+            //                     height: 16,
+            //                     width: 16,
+            //                     child:
+            //                         CircularProgressIndicator(strokeWidth: 2),
+            //                   )
+            //                 : const Icon(Icons.save),
+            //             label: Text(isLoadingApi.value
+            //                 ? 'Testing...'
+            //                 : 'Test & Save API Endpoint'),
+            //           ),
+            //         ),
+            //         if (apiConnectionStatus.value != null) ...[
+            //           const SizedBox(height: 12),
+            //           Container(
+            //             width: double.infinity,
+            //             padding: const EdgeInsets.all(12),
+            //             decoration: BoxDecoration(
+            //               color:
+            //                   apiConnectionStatus.value!.startsWith('Connected')
+            //                       ? (context.isDarkTheme
+            //                           ? Colors.green.shade800
+            //                           : Colors.green.shade100)
+            //                       : (context.isDarkTheme
+            //                           ? Colors.red.shade800
+            //                           : Colors.red.shade100),
+            //               borderRadius: BorderRadius.circular(8),
+            //               border: Border.all(
+            //                 color: apiConnectionStatus.value!
+            //                         .startsWith('Connected')
+            //                     ? (context.isDarkTheme
+            //                         ? Colors.green.shade600
+            //                         : Colors.green.shade300)
+            //                     : (context.isDarkTheme
+            //                         ? Colors.red.shade600
+            //                         : Colors.red.shade300),
+            //               ),
+            //             ),
+            //             child: Row(
+            //               children: [
+            //                 Icon(
+            //                   apiConnectionStatus.value!.startsWith('Connected')
+            //                       ? Icons.check_circle
+            //                       : Icons.error,
+            //                   color: apiConnectionStatus.value!
+            //                           .startsWith('Connected')
+            //                       ? Colors.green.shade700
+            //                       : Colors.red.shade700,
+            //                   size: 20,
+            //                 ),
+            //                 const SizedBox(width: 8),
+            //                 Expanded(
+            //                   child: Text(
+            //                     apiConnectionStatus.value!,
+            //                     style: TextStyle(
+            //                       color: apiConnectionStatus.value!
+            //                               .startsWith('Connected')
+            //                           ? Colors.green.shade700
+            //                           : Colors.red.shade700,
+            //                       fontWeight: FontWeight.w500,
+            //                     ),
+            //                   ),
+            //                 ),
+            //               ],
+            //             ),
+            //           ),
+            //         ],
+            //       ],
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),

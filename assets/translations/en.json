@@ -1,5 +1,58 @@
 {
-  "welcome": "Welcome to Immich",
+  "welcome": "Welcome to Family Hub",
+  "app_name": "Family Hub",
   "login": "Log in",
-  "logout": "Log out"
+  "logout": "Log out",
+
+  "app_bar_signout_dialog_title": "Are you sure",
+  "app_bar_signout_dialog_content": "Are you sure you want to logout?",
+
+  "library": "Libray",
+  "files": "Files",
+  "photos": "Photos",
+  "settings": "Settings",
+  "profile": "Profile",
+
+  "full_name": "Full Name",
+  "email_address": "Email Address",
+  "logout": "Logout",
+  "yes": "Yes",
+  "no": "no",
+
+  "setting_languages_title": "Change Language",
+  "setting_languages_subtitle": "Change Language",
+  "languages": "Language",
+  "setting_languages_apply": "Apply",
+
+  "search": "Search",
+  "select_all": "Select All",
+  "selected": "selected",
+
+  "recent":"Recent",
+  "search_recent_photos":"Search Recent Photos",
+  "recent_photos_description":"Recent Photos",
+  "family":"Family",
+  "search_family_photos":"Search Family Photos",
+  "family_photos_description":"Family Photos",
+  "images":"Images",
+  "search_images":"Search Images",
+  "images_description":"Images Photos",
+  "favorites":"Favorites",
+  "search_favorites":"Search Favorite Photos",
+  "favorite_photos_description":"Favorite Photos",
+  "videos":"Videos",
+  "search_videos":"Search Videos",
+  "videos_description":"Videos",
+  "search_photos":"Search Photos",
+
+  "items":"items",
+
+  "view_all": "View All",
+
+  "email": "Email",
+  "password": "Password",
+  "log_in": "Log in",
+  "login_form_email_hint": "Enter your email",
+  "login_form_password_hint": "Enter your password",
+  "login_form_failed_login": "Login failed. Please check your email and password."
 }

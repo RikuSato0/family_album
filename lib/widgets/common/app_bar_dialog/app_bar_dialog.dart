@@ -39,219 +39,339 @@ class ImmichAppBarDialog extends HookConsumerWidget {
       [],
     );
 
-    buildTopRow() {
-      return Stack(
-        children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: InkWell(
-              onTap: () => context.pop(),
-              child: const Icon(
-                Icons.close,
-                size: 20,
-              ),
-            ),
-          ),
-          Center(
-            child: Image.asset(
-              context.isDarkTheme
-                  ? 'assets/immich-text-dark.png'
-                  : 'assets/immich-text-light.png',
-              height: 16,
-            ),
-          ),
-        ],
-      );
-    }
-
-    buildActionButton(
-      IconData icon,
-      String text,
-      Function() onTap, {
-      Widget? trailing,
-    }) {
-      return ListTile(
-        dense: true,
-        visualDensity: VisualDensity.standard,
-        contentPadding: const EdgeInsets.only(left: 30, right: 30),
-        minLeadingWidth: 40,
-        leading: SizedBox(
-          child: Icon(
-            icon,
-            color: theme.textTheme.labelLarge?.color?.withAlpha(250),
-            size: 20,
-          ),
-        ),
-        title: Text(
-          text,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.textTheme.labelLarge?.color?.withAlpha(250),
-          ),
-        ).tr(),
-        onTap: onTap,
-        trailing: trailing,
-      );
-    }
-
-    buildSettingButton() {
-      return buildActionButton(
-        Icons.settings_outlined,
-        "settings",
-        () => context.pushRoute(const SettingsRoute()),
-      );
-    }
-
-    buildAppLogButton() {
-      return buildActionButton(
-        Icons.assignment_outlined,
-        "profile_drawer_app_logs",
-        () => context.pushRoute(const AppLogRoute()),
-      );
-    }
-
-    buildSignOutButton() {
-      return buildActionButton(
-        Icons.logout_rounded,
-        "sign_out",
-        () async {
-          if (isLoggingOut.value) {
-            return;
-          }
-
-          showDialog(
-            context: context,
-            builder: (BuildContext ctx) {
-              return ConfirmDialog(
-                title: "app_bar_signout_dialog_title",
-                content: "app_bar_signout_dialog_content",
-                ok: "yes",
-                onOk: () async {
-                  isLoggingOut.value = true;
-                  await ref
-                      .read(authProvider.notifier)
-                      .logout()
-                      .whenComplete(() => isLoggingOut.value = false);
-
-                  ref.read(manualUploadProvider.notifier).cancelBackup();
-                  ref.read(backupProvider.notifier).cancelBackup();
-                  ref.read(assetProvider.notifier).clearAllAssets();
-                  ref.read(websocketProvider.notifier).disconnect();
-                  context.replaceRoute(const LoginRoute());
-                },
-              );
-            },
-          );
-        },
-        trailing: isLoggingOut.value
-            ? const SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : null,
-      );
-    }
-
-    Widget buildStorageInformation() {
-      var percentage = backupState.serverInfo.diskUsagePercentage / 100;
-      var usedDiskSpace = backupState.serverInfo.diskUse;
-      var totalDiskSpace = backupState.serverInfo.diskSize;
-
-      if (user != null && user.hasQuota) {
-        usedDiskSpace = formatBytes(user.quotaUsageInBytes);
-        totalDiskSpace = formatBytes(user.quotaSizeInBytes);
-        percentage = user.quotaUsageInBytes / user.quotaSizeInBytes;
-      }
-
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 3),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: context.colorScheme.surface,
-          ),
-          child: ListTile(
-            minLeadingWidth: 50,
-            leading: Icon(
-              Icons.storage_rounded,
-              color: theme.primaryColor,
-            ),
-            title: Text(
-              "backup_controller_page_server_storage",
-              style: context.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
-            ).tr(),
-            isThreeLine: true,
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: LinearProgressIndicator(
-                      minHeight: 10.0,
-                      value: percentage,
-                      borderRadius:
-                          const BorderRadius.all(Radius.circular(10.0)),
+    Widget buildHeader() {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Close button row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFF3F4F6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      color: Color(0xFF6B7280),
+                      size: 18,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12.0),
-                    child:
-                        const Text('backup_controller_page_storage_format').tr(
-                      namedArgs: {
-                        'used': usedDiskSpace,
-                        'total': totalDiskSpace,
-                      },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // App Title
+            Text(
+              'Family Hub',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6366F1), // Purple color matching the image
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Profile Avatar with Online Status
+            Stack(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF6366F1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: user?.profileImagePath != null
+                      ? ClipOval(
+                          child: Image.network(
+                            user!.profileImagePath!,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback to initials if image fails to load
+                              return Center(
+                                child: Text(
+                                  user.name.isNotEmpty
+                                      ? user.name
+                                              .substring(0, 1)
+                                              .toUpperCase() +
+                                          (user.name.split(' ').length > 1
+                                              ? user.name
+                                                  .split(' ')[1]
+                                                  .substring(0, 1)
+                                                  .toUpperCase()
+                                              : '')
+                                      : 'U',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            user?.name != null && user!.name.isNotEmpty
+                                ? user!.name.substring(0, 1).toUpperCase() +
+                                    (user!.name.split(' ').length > 1
+                                        ? user!.name
+                                            .split(' ')[1]
+                                            .substring(0, 1)
+                                            .toUpperCase()
+                                        : '')
+                                : 'SJ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                ),
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF10B981), // Green online indicator
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildUserInfo() {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            // Full Name Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFDDD6FE),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF6366F1),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Full Name',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.name ?? 'Sarah Johnson',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF111827),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            // Email Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFEDE9FE),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.email_outlined,
+                      color: Color(0xFF8B5CF6),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Email Address',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        user?.email ?? 'sarah.johnson@email.com',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF111827),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildLogOutButton() {
+      return Container(
+        margin: const EdgeInsets.all(24),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isLoggingOut.value
+                ? null
+                : () async {
+                    if (isLoggingOut.value) {
+                      return;
+                    }
+
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext ctx) {
+                        return ConfirmDialog(
+                          title: "app_bar_signout_dialog_title",
+                          content: "app_bar_signout_dialog_content",
+                          ok: "yes",
+                          onOk: () async {
+                            isLoggingOut.value = true;
+                            await ref
+                                .read(authProvider.notifier)
+                                .logout()
+                                .whenComplete(() => isLoggingOut.value = false);
+
+                            ref.read(manualUploadProvider.notifier).cancelBackup();
+                            ref.read(backupProvider.notifier).cancelBackup();
+                            ref.read(assetProvider.notifier).clearAllAssets();
+                            ref.read(websocketProvider.notifier).disconnect();
+                            context.replaceRoute(const LoginRoute());
+                          },
+                        );
+                      },
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  Color(0xFFEF4444), // Red color matching the image
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isLoggingOut.value)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else
+                  Icon(Icons.logout_rounded, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Log Out',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
-    buildFooter() {
-      return Padding(
-        padding: const EdgeInsets.only(top: 10, bottom: 20),
+    Widget buildBottomDots() {
+      return Container(
+        padding: const EdgeInsets.only(bottom: 24),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            InkWell(
-              onTap: () {
-                context.pop();
-                launchUrl(
-                  Uri.parse('https://immich.app'),
-                  mode: LaunchMode.externalApplication,
-                );
-              },
-              child: Text(
-                "documentation",
-                style: context.textTheme.bodySmall,
-              ).tr(),
-            ),
-            const SizedBox(
-              width: 20,
-              child: Text(
-                "•",
-                textAlign: TextAlign.center,
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Color(0xFFD1D5DB),
+                shape: BoxShape.circle,
               ),
             ),
-            InkWell(
-              onTap: () {
-                context.pop();
-                launchUrl(
-                  Uri.parse('https://github.com/immich-app/immich'),
-                  mode: LaunchMode.externalApplication,
-                );
-              },
-              child: Text(
-                "profile_drawer_github",
-                style: context.textTheme.bodySmall,
-              ).tr(),
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Color(0xFF6366F1),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Color(0xFFD1D5DB),
+                shape: BoxShape.circle,
+              ),
             ),
           ],
         ),
@@ -262,35 +382,33 @@ class ImmichAppBarDialog extends HookConsumerWidget {
       behavior: HitTestBehavior.translucent,
       direction: DismissDirection.down,
       onDismissed: (_) => context.pop(),
-      key: const Key('app_bar_dialog'),
+      key: const Key('family_hub_dialog'),
       child: Dialog(
         clipBehavior: Clip.hardEdge,
         alignment: Alignment.topCenter,
         insetPadding: EdgeInsets.only(
-          top: isHorizontal ? 20 : 40,
+          top: isHorizontal ? 20 : 60,
           left: horizontalPadding,
           right: horizontalPadding,
-          bottom: isHorizontal ? 20 : 100,
+          bottom: isHorizontal ? 20 : 120,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
         ),
-        child: SizedBox(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: buildTopRow(),
-                ),
-                const AppBarProfileInfoBox(),
-                buildStorageInformation(),
-                // const AppBarServerInfo(),
-                buildAppLogButton(),
-                // buildSettingButton(),
-                buildSignOutButton(),
-                buildFooter(),
+                buildHeader(),
+                buildUserInfo(),
+                const SizedBox(height: 24),
+                buildLogOutButton(),
+                buildBottomDots(),
               ],
             ),
           ),

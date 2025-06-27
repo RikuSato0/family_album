@@ -16,6 +16,47 @@ import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/services/api.service.dart';
 import 'package:immich_mobile/widgets/common/search_field.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:http/http.dart' as http;
+
+Future<Uint8List> loadCircularImage(String imageUrl,
+    {double size = 100.0, double borderWidth = 4.0}) async {
+  final response = await http.get(Uri.parse(imageUrl));
+  if (response.statusCode != 200) {
+    throw Exception("Failed to load image");
+  }
+
+  final codec = await ui.instantiateImageCodec(response.bodyBytes,
+      targetWidth: size.toInt(), targetHeight: size.toInt());
+  final frame = await codec.getNextFrame();
+  final image = frame.image;
+
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder);
+  final paint = ui.Paint();
+  final borderPaint = ui.Paint()
+    ..color = const ui.Color(0xFFFFFFFF)
+    ..style = ui.PaintingStyle.stroke
+    ..strokeWidth = borderWidth;
+
+  final center = Offset(size / 2, size / 2);
+  final radius = size / 2;
+
+  final rect = Rect.fromLTWH(0, 0, size, size);
+
+  canvas.clipPath(Path()..addOval(rect));
+
+  paint.isAntiAlias = true;
+  canvas.drawImage(image, Offset.zero, paint);
+
+  canvas.drawCircle(center, radius - borderWidth / 2, borderPaint);
+
+  final picture = recorder.endRecording();
+  final img = await picture.toImage(size.toInt(), size.toInt());
+  final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+  return byteData!.buffer.asUint8List();
+}
 
 // Mock data model for place clusters
 class PlaceCluster {
@@ -57,7 +98,8 @@ class PlacesCollectionPage extends HookConsumerWidget {
         location: const LatLng(39.8283, -98.5795),
         photoCount: 142,
         thumbnailUrl: 'https://picsum.photos/200/200?random=usa',
-        photoUrls: List.generate(142, (i) => 'https://picsum.photos/300/300?random=$i'),
+        photoUrls: List.generate(
+            142, (i) => 'https://picsum.photos/300/300?random=$i'),
       ),
       PlaceCluster(
         id: '2',
@@ -65,7 +107,8 @@ class PlacesCollectionPage extends HookConsumerWidget {
         location: const LatLng(23.6345, -102.5528),
         photoCount: 86,
         thumbnailUrl: 'https://picsum.photos/200/200?random=mexico',
-        photoUrls: List.generate(86, (i) => 'https://picsum.photos/300/300?random=${i + 142}'),
+        photoUrls: List.generate(
+            86, (i) => 'https://picsum.photos/300/300?random=${i + 142}'),
       ),
       PlaceCluster(
         id: '3',
@@ -73,7 +116,8 @@ class PlacesCollectionPage extends HookConsumerWidget {
         location: const LatLng(4.5709, -74.2973),
         photoCount: 57,
         thumbnailUrl: 'https://picsum.photos/200/200?random=colombia',
-        photoUrls: List.generate(57, (i) => 'https://picsum.photos/300/300?random=${i + 228}'),
+        photoUrls: List.generate(
+            57, (i) => 'https://picsum.photos/300/300?random=${i + 228}'),
       ),
     ];
 
@@ -85,8 +129,10 @@ class PlacesCollectionPage extends HookConsumerWidget {
     double _calculateDistance(LatLng point1, LatLng point2) {
       final double lat1Rad = point1.latitude * (3.14159 / 180);
       final double lat2Rad = point2.latitude * (3.14159 / 180);
-      final double deltaLat = (point2.latitude - point1.latitude) * (3.14159 / 180);
-      final double deltaLng = (point2.longitude - point1.longitude) * (3.14159 / 180);
+      final double deltaLat =
+          (point2.latitude - point1.latitude) * (3.14159 / 180);
+      final double deltaLng =
+          (point2.longitude - point1.longitude) * (3.14159 / 180);
 
       final double a = (deltaLat / 2).abs() + (deltaLng / 2).abs();
       return a; // Simplified distance calculation
@@ -96,7 +142,7 @@ class PlacesCollectionPage extends HookConsumerWidget {
       // Find if the click is near any cluster
       PlaceCluster? tappedCluster;
       const double threshold = 0.5; // Degrees threshold for tap detection
-      
+
       for (final cluster in placeClusters) {
         final distance = _calculateDistance(latLng, cluster.location);
         if (distance < threshold) {
@@ -104,7 +150,7 @@ class PlacesCollectionPage extends HookConsumerWidget {
           break;
         }
       }
-      
+
       if (tappedCluster != null) {
         selectedCluster.value = tappedCluster;
         showModalBottomSheet(
@@ -179,35 +225,30 @@ class PlacesCollectionPage extends HookConsumerWidget {
     MaplibreMapController controller,
     List<PlaceCluster> clusters,
   ) async {
-    // Add circle markers for each cluster
     for (final cluster in clusters) {
-      await controller.addCircle(
-        CircleOptions(
-          geometry: cluster.location,
-          circleRadius: 20.0,
-          circleColor: '#FFFFFF',
-          circleStrokeColor: '#2196F3',
-          circleStrokeWidth: 3.0,
-        ),
-      );
-      
-      // Add text label with photo count
-      await controller.addSymbol(
-        SymbolOptions(
-          geometry: cluster.location,
-          textField: cluster.photoCount.toString(),
-          textSize: 12.0,
-          textColor: '#2196F3',
-          textHaloColor: '#FFFFFF',
-          textHaloWidth: 2.0,
-        ),
-      );
+      try {
+        final bytes = await loadCircularImage(
+          cluster.thumbnailUrl,
+          size: 160,
+          borderWidth: 4,
+        );
+        final iconName = 'cluster_${cluster.id}';
+
+        await controller.addImage(iconName, bytes);
+
+        await controller.addSymbol(
+          SymbolOptions(
+            geometry: cluster.location,
+            iconImage: iconName,
+            iconSize: 1,
+            iconAnchor: 'center',
+          ),
+        );
+      } catch (e) {
+        debugPrint('Failed to load marker image: $e');
+      }
     }
   }
-
-
-
-
 }
 
 class PlacePhotosBottomSheet extends StatelessWidget {
@@ -265,6 +306,20 @@ class PlacePhotosBottomSheet extends StatelessWidget {
                         ],
                       ),
                     ),
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.pushRoute(
+                          PhotoGridRoute(
+                            title: cluster.name,
+                            photoUrls: cluster.photoUrls,
+                            subtitle: '${cluster.photoCount} photos',
+                          ),
+                        );
+                      },
+                      child: Text('view_all'.tr()),
+                    ),
+                    const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
@@ -273,7 +328,7 @@ class PlacePhotosBottomSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // Photos grid
+              // Photos grid preview (show first 12 photos)
               Expanded(
                 child: GridView.builder(
                   controller: scrollController,
@@ -283,45 +338,72 @@ class PlacePhotosBottomSheet extends StatelessWidget {
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),
-                  itemCount: cluster.photoUrls.length,
+                  itemCount: cluster.photoUrls.length > 12
+                      ? 12
+                      : cluster.photoUrls.length,
                   itemBuilder: (context, index) {
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to search results for this place
+                        Navigator.pop(context);
                         context.pushRoute(
-                          SearchRoute(
-                            prefilter: SearchFilter(
-                              people: {},
-                              location: SearchLocationFilter(
-                                city: cluster.name,
-                              ),
-                              camera: SearchCameraFilter(),
-                              date: SearchDateFilter(),
-                              display: SearchDisplayFilters(
-                                isNotInAlbum: false,
-                                isArchive: false,
-                                isFavorite: false,
-                              ),
-                              mediaType: AssetType.other,
-                            ),
+                          PhotoGridRoute(
+                            title: cluster.name,
+                            photoUrls: cluster.photoUrls,
+                            subtitle: '${cluster.photoCount} photos',
                           ),
                         );
                       },
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: cluster.photoUrls[index],
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                        child: Stack(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: cluster.photoUrls[index],
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.error),
+                              ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.error),
-                          ),
+                            // Show "+" overlay on last visible item if there are more photos
+                            if (index == 11 && cluster.photoUrls.length > 12)
+                              Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(150),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.add,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                      Text(
+                                        '+${cluster.photoUrls.length - 12}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     );

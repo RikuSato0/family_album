@@ -35,6 +35,12 @@ import 'package:immich_mobile/pages/editing/crop.page.dart';
 import 'package:immich_mobile/pages/editing/edit.page.dart';
 import 'package:immich_mobile/pages/editing/filter.page.dart';
 import 'package:immich_mobile/pages/library/archive.page.dart';
+import 'package:immich_mobile/pages/library/collections/common_photo_grid.page.dart';
+import 'package:immich_mobile/pages/library/collections/favorites_collection.page.dart';
+import 'package:immich_mobile/pages/library/collections/images_collection.page.dart';
+import 'package:immich_mobile/pages/library/collections/photo_viewer.page.dart';
+import 'package:immich_mobile/pages/library/collections/recent_collection.page.dart';
+import 'package:immich_mobile/pages/library/collections/videos_collection.page.dart';
 import 'package:immich_mobile/pages/library/favorite.page.dart';
 import 'package:immich_mobile/pages/library/folder/folder.page.dart';
 import 'package:immich_mobile/pages/library/library.page.dart';
@@ -290,6 +296,34 @@ class AppRouter extends RootStackRouter {
       page: PeopleCollectionRoute.page,
       guards: [_authGuard, _duplicateGuard],
       transitionsBuilder: TransitionsBuilders.slideLeft,
+    ),
+    CustomRoute(
+      page: RecentCollectionRoute.page,
+      guards: [_authGuard, _duplicateGuard],
+      transitionsBuilder: TransitionsBuilders.slideLeft,
+    ),
+    CustomRoute(
+      page: FavoritesCollectionRoute.page,
+      guards: [_authGuard, _duplicateGuard],
+      transitionsBuilder: TransitionsBuilders.slideLeft,
+    ),
+    CustomRoute(
+      page: ImagesCollectionRoute.page,
+      guards: [_authGuard, _duplicateGuard],
+      transitionsBuilder: TransitionsBuilders.slideLeft,
+    ),
+    CustomRoute(
+      page: VideosCollectionRoute.page,
+      guards: [_authGuard, _duplicateGuard],
+      transitionsBuilder: TransitionsBuilders.slideLeft,
+    ),
+    AutoRoute(
+      page: PhotoGridRoute.page,
+      guards: [_authGuard, _duplicateGuard],
+    ),
+    AutoRoute(
+      page: PhotoViewerRoute.page,
+      guards: [_authGuard, _duplicateGuard],
     ),
     CustomRoute(
       page: AlbumsRoute.page,

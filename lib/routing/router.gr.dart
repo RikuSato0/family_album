@@ -1308,6 +1308,192 @@ class PeopleCollectionRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [RecentCollectionPage]
+class RecentCollectionRoute extends PageRouteInfo<void> {
+  const RecentCollectionRoute({List<PageRouteInfo>? children})
+      : super(
+          RecentCollectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'RecentCollectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const RecentCollectionPage();
+    },
+  );
+}
+
+/// generated route for
+/// [FavoritesCollectionPage]
+class FavoritesCollectionRoute extends PageRouteInfo<void> {
+  const FavoritesCollectionRoute({List<PageRouteInfo>? children})
+      : super(
+          FavoritesCollectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'FavoritesCollectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const FavoritesCollectionPage();
+    },
+  );
+}
+
+/// generated route for
+/// [ImagesCollectionPage]
+class ImagesCollectionRoute extends PageRouteInfo<void> {
+  const ImagesCollectionRoute({List<PageRouteInfo>? children})
+      : super(
+          ImagesCollectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'ImagesCollectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ImagesCollectionPage();
+    },
+  );
+}
+
+/// generated route for
+/// [VideosCollectionPage]
+class VideosCollectionRoute extends PageRouteInfo<void> {
+  const VideosCollectionRoute({List<PageRouteInfo>? children})
+      : super(
+          VideosCollectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'VideosCollectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const VideosCollectionPage();
+    },
+  );
+}
+
+/// generated route for
+/// [PhotoGridPage]
+class PhotoGridRoute extends PageRouteInfo<PhotoGridRouteArgs> {
+  PhotoGridRoute({
+    Key? key,
+    required String title,
+    required List<String> photoUrls,
+    String? subtitle,
+    bool isVideoGrid = false,
+    List<PageRouteInfo>? children,
+  }) : super(
+          PhotoGridRoute.name,
+          args: PhotoGridRouteArgs(
+            key: key,
+            title: title,
+            photoUrls: photoUrls,
+            subtitle: subtitle,
+            isVideoGrid: isVideoGrid,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'PhotoGridRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<PhotoGridRouteArgs>();
+      return PhotoGridPage(
+        key: args.key,
+        title: args.title,
+        photoUrls: args.photoUrls,
+        subtitle: args.subtitle,
+        isVideoGrid: args.isVideoGrid,
+      );
+    },
+  );
+}
+
+class PhotoGridRouteArgs {
+  const PhotoGridRouteArgs({
+    this.key,
+    required this.title,
+    required this.photoUrls,
+    this.subtitle,
+    this.isVideoGrid = false,
+  });
+
+  final Key? key;
+  final String title;
+  final List<String> photoUrls;
+  final String? subtitle;
+  final bool isVideoGrid;
+
+  @override
+  String toString() {
+    return 'PhotoGridRouteArgs{key: $key, title: $title, photoUrls: $photoUrls, subtitle: $subtitle, isVideoGrid: $isVideoGrid}';
+  }
+}
+
+/// generated route for
+/// [PhotoViewerPage]
+class PhotoViewerRoute extends PageRouteInfo<PhotoViewerRouteArgs> {
+  PhotoViewerRoute({
+    Key? key,
+    required List<String> imageUrls,
+    required int initialIndex,
+    List<PageRouteInfo>? children,
+  }) : super(
+          PhotoViewerRoute.name,
+          args: PhotoViewerRouteArgs(
+            key: key,
+            imageUrls: imageUrls,
+            initialIndex: initialIndex,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'PhotoViewerRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<PhotoViewerRouteArgs>();
+      return PhotoViewerPage(
+        key: args.key,
+        imageUrls: args.imageUrls,
+        initialIndex: args.initialIndex,
+      );
+    },
+  );
+}
+
+class PhotoViewerRouteArgs {
+  const PhotoViewerRouteArgs({
+    this.key,
+    required this.imageUrls,
+    required this.initialIndex,
+  });
+
+  final Key? key;
+  final List<String> imageUrls;
+  final int initialIndex;
+
+  @override
+  String toString() {
+    return 'PhotoViewerRouteArgs{key: $key, imageUrls: $imageUrls, initialIndex: $initialIndex}';
+  }
+}
+
+/// generated route for
 /// [PermissionOnboardingPage]
 class PermissionOnboardingRoute extends PageRouteInfo<void> {
   const PermissionOnboardingRoute({List<PageRouteInfo>? children})

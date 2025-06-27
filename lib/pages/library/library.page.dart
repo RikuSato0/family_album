@@ -134,7 +134,7 @@ class RecentCollectionCard extends ConsumerWidget {
         return GestureDetector(
           onTap: () {
             // Navigate to recent photos
-            // context.pushRoute(const RecentPhotosRoute());
+            context.pushRoute(const RecentCollectionRoute());
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +333,7 @@ class FavoritesCollectionCard extends ConsumerWidget {
         return GestureDetector(
           onTap: () {
             // Navigate to favorites
-            // context.pushRoute(const FavoritesRoute());
+            context.pushRoute(const FavoritesCollectionRoute());
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +434,7 @@ class ImagesCollectionCard extends ConsumerWidget {
         return GestureDetector(
           onTap: () {
             // Navigate to images only
-            // context.pushRoute(const ImagesRoute());
+            context.pushRoute(const ImagesCollectionRoute());
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,7 +535,7 @@ class VideosCollectionCard extends ConsumerWidget {
         return GestureDetector(
           onTap: () {
             // Navigate to videos only
-            // context.pushRoute(const VideosRoute());
+            context.pushRoute(const VideosCollectionRoute());
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,13 +634,11 @@ class PlacesCollectionCard extends StatelessWidget {
         final size = context.width * widthFactor - 20.0;
 
         return GestureDetector(
-          onTap: () => 
-          {},
-          //  context.pushRoute(
-            // PlacesCollectionRoute(
-            //   currentLocation: null,
-            // ),
-          // ),
+          onTap: () => context.pushRoute(
+            PlacesCollectionRoute(
+              currentLocation: null,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

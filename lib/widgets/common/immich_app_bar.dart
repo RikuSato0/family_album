@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/models/backup/backup_state.model.dart';
 import 'package:immich_mobile/models/server_info/server_info.model.dart';
@@ -14,6 +15,10 @@ import 'package:immich_mobile/providers/user.provider.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/widgets/common/app_bar_dialog/app_bar_dialog.dart';
 import 'package:immich_mobile/widgets/common/user_circle_avatar.dart';
+import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final selectedImageProvider = StateProvider<File?>((ref) => null);
 
 class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
@@ -119,12 +124,64 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
       }
     }
 
-    buildBackupIndicator() {
-      final indicatorIcon = getBackupBadgeIcon();
+    // buildBackupIndicator() {
+    //   final indicatorIcon = getBackupBadgeIcon();
+    //   final badgeBackground = context.colorScheme.surfaceContainer;
+
+    //   return InkWell(
+    //     onTap: () => context.pushRoute(const BackupControllerRoute()),
+    //     borderRadius: BorderRadius.circular(12),
+    //     child: Badge(
+    //       label: Container(
+    //         width: widgetSize / 2,
+    //         height: widgetSize / 2,
+    //         decoration: BoxDecoration(
+    //           color: badgeBackground,
+    //           border: Border.all(
+    //             color: context.colorScheme.outline.withValues(alpha: .3),
+    //           ),
+    //           borderRadius: BorderRadius.circular(widgetSize / 2),
+    //         ),
+    //         child: indicatorIcon,
+    //       ),
+    //       backgroundColor: Colors.transparent,
+    //       alignment: Alignment.bottomRight,
+    //       isLabelVisible: indicatorIcon != null,
+    //       offset: const Offset(-2, -12),
+    //       child: Icon(
+    //         Icons.backup_rounded,
+    //         size: widgetSize,
+    //         color: context.primaryColor,
+    //       ),
+    //     ),
+    //   );
+    // }
+
+    final imageFile = ref.watch(selectedImageProvider);
+
+    buildUpload() {
+      final imageFile = ref.watch(selectedImageProvider);
       final badgeBackground = context.colorScheme.surfaceContainer;
+      final hasImage = imageFile != null;
 
       return InkWell(
-        onTap: () => context.pushRoute(const BackupControllerRoute()),
+        onTap: () async {
+          final picker = ImagePicker();
+          final pickedFile =
+              await picker.pickImage(source: ImageSource.gallery);
+          if (pickedFile != null) {
+            final imageFile = File(pickedFile.path);
+            ref.read(selectedImageProvider.notifier).state = imageFile;
+
+            // Handle upload logic
+            print("Selected image: ${imageFile.path}");
+
+            // Reset after 5 seconds
+            Future.delayed(const Duration(seconds: 5), () {
+              ref.read(selectedImageProvider.notifier).state = null;
+            });
+          }
+        },
         borderRadius: BorderRadius.circular(12),
         child: Badge(
           label: Container(
@@ -133,18 +190,20 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
             decoration: BoxDecoration(
               color: badgeBackground,
               border: Border.all(
-                color: context.colorScheme.outline.withValues(alpha: .3),
+                color: context.colorScheme.outline.withOpacity(.3),
               ),
               borderRadius: BorderRadius.circular(widgetSize / 2),
             ),
-            child: indicatorIcon,
+            child: hasImage
+                ? const Icon(Icons.check_circle, color: Colors.green, size: 16)
+                : const Icon(Icons.upload_file, size: 16),
           ),
           backgroundColor: Colors.transparent,
           alignment: Alignment.bottomRight,
-          isLabelVisible: indicatorIcon != null,
+          isLabelVisible: true,
           offset: const Offset(-2, -12),
           child: Icon(
-            Icons.backup_rounded,
+            Icons.upload_rounded,
             size: widgetSize,
             color: context.primaryColor,
           ),
@@ -207,8 +266,13 @@ class ImmichAppBar extends ConsumerWidget implements PreferredSizeWidget {
         if (showUploadButton)
           Padding(
             padding: const EdgeInsets.only(right: 20),
-            child: buildBackupIndicator(),
+            child: buildUpload(),
           ),
+        // if (showUploadButton)
+        //   Padding(
+        //     padding: const EdgeInsets.only(right: 20),
+        //     child: buildBackupIndicator(),
+        //   ),
         if (showProfileButton)
           Padding(
             padding: const EdgeInsets.only(right: 20),
