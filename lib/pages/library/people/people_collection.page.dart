@@ -47,10 +47,10 @@ class PeopleCollectionPage extends HookConsumerWidget {
                     onTapOutside: (_) => formFocus.unfocus(),
                     onChanged: (value) => search.value = value,
                     filled: true,
-                    hintText: 'filter_people'.tr(),
+                    hintText: 'search_family_members'.tr(),
                     autofocus: true,
                   )
-                : Text('people'.tr()),
+                : Text('family'.tr()),
             actions: [
               IconButton(
                 icon: Icon(search.value != null ? Icons.close : Icons.search),
@@ -62,78 +62,157 @@ class PeopleCollectionPage extends HookConsumerWidget {
           ),
           body: people.when(
             data: (people) {
+              var filteredPeople = people;
               if (search.value != null) {
-                people = people.where((person) {
+                filteredPeople = people.where((person) {
                   return person.name
                       .toLowerCase()
                       .contains(search.value!.toLowerCase());
                 }).toList();
               }
-              return GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isTablet ? 6 : 3,
-                  childAspectRatio: 0.85,
-                  mainAxisSpacing: isPortrait && isTablet ? 36 : 0,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                itemCount: people.length,
-                itemBuilder: (context, index) {
-                  final person = people[index];
-
-                  return Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          context.pushRoute(
-                            PersonResultRoute(
-                              personId: person.id,
-                              personName: person.name,
-                            ),
-                          );
-                        },
-                        child: Material(
-                          shape: const CircleBorder(side: BorderSide.none),
-                          elevation: 3,
-                          child: CircleAvatar(
-                            maxRadius: isTablet ? 120 / 2 : 96 / 2,
-                            backgroundImage: NetworkImage(
-                              getFaceThumbnailUrl(person.id),
-                              headers: headers,
-                            ),
-                          ),
+              
+              return RefreshIndicator(
+                onRefresh: () async {
+                  try {
+                    print("🔄 Refreshing people data...");
+                    ref.invalidate(getAllPeopleProvider);
+                    await ref.read(getAllPeopleProvider.future);
+                    print("✅ People data refreshed");
+                  } catch (e) {
+                    print("❌ People refresh failed: $e");
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Refresh failed: $e')),
+                      );
+                    }
+                  }
+                },
+                child: filteredPeople.isNotEmpty
+                    ? GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: isTablet ? 6 : 3,
+                          childAspectRatio: 0.85,
+                          mainAxisSpacing: isPortrait && isTablet ? 36 : 0,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      GestureDetector(
-                        onTap: () => showNameEditModel(person.id, person.name),
-                        child: person.name.isEmpty
-                            ? Text(
-                                'add_a_name'.tr(),
-                                style: context.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: context.colorScheme.primary,
-                                ),
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16.0,
-                                ),
-                                child: Text(
-                                  person.name,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w500,
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        itemCount: filteredPeople.length,
+                        itemBuilder: (context, index) {
+                          final person = filteredPeople[index];
+
+                          return Column(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  context.pushRoute(
+                                    PersonResultRoute(
+                                      personId: person.id,
+                                      personName: person.name,
+                                    ),
+                                  );
+                                },
+                                child: Material(
+                                  shape: const CircleBorder(side: BorderSide.none),
+                                  elevation: 3,
+                                  child: CircleAvatar(
+                                    maxRadius: isTablet ? 120 / 2 : 96 / 2,
+                                    backgroundImage: NetworkImage(
+                                      getFaceThumbnailUrl(person.id),
+                                      headers: headers,
+                                    ),
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                onTap: () => showNameEditModel(person.id, person.name),
+                                child: person.name.isEmpty
+                                    ? Text(
+                                        'add_a_name'.tr(),
+                                        style: context.textTheme.titleSmall?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: context.colorScheme.primary,
+                                        ),
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16.0,
+                                        ),
+                                        child: Text(
+                                          person.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: context.textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                              ),
+                            ],
+                          );
+                        },
+                      )
+                    : 
+                    ListView(
+                        children: [
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.face_outlined,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  search.value != null ? 'no_family_members_found'.tr() : 'no_family_members_yet'.tr(),
+                                  style: context.textTheme.bodyLarge?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (search.value == null) ...[
+                                  Text(
+                                    'face_detection_message'.tr(),
+                                    textAlign: TextAlign.center,
+                                    style: context.textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'pull_to_refresh'.tr(),
+                                    style: context.textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                },
               );
             },
-            error: (error, stack) => const Text("error"),
-            loading: () => const CircularProgressIndicator(),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'error_loading_people'.tr(),
+                    style: context.textTheme.bodyLarge?.copyWith(color: Colors.red[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'pull_to_refresh_try_again'.tr(),
+                    style: context.textTheme.bodySmall?.copyWith(color: Colors.red[500]),
+                  ),
+                ],
+              ),
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
           ),
         );
       },

@@ -20,6 +20,12 @@ import 'package:immich_mobile/widgets/common/immich_app_bar.dart';
 import 'package:immich_mobile/widgets/common/user_avatar.dart';
 import 'package:immich_mobile/widgets/map/map_thumbnail.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:immich_mobile/providers/timeline.provider.dart';
+import 'package:immich_mobile/utils/image_url_builder.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:immich_mobile/providers/user.provider.dart';
+import 'package:immich_mobile/entities/asset.entity.dart';
+import 'package:immich_mobile/providers/search/search_page_state.provider.dart';
 
 import '../../models/albums/album_search.model.dart';
 import '../../widgets/common/search_field.dart';
@@ -49,8 +55,8 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     return Scaffold(
-      appBar: const ImmichAppBar(
-        title: "Photos",
+      appBar: ImmichAppBar(
+        title: "photos".tr(),
         showProfileButton: false,
         showUploadButton: true,
         showRefreshButton: false,
@@ -125,6 +131,10 @@ class RecentCollectionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Get real recent photos data from Immich
+    final currentUser = ref.watch(currentUserProvider);
+    final recentAssets = ref.watch(singleUserTimelineProvider(currentUser?.id ?? ''));
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -157,12 +167,59 @@ class RecentCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Background image
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/library/recent.png'),
-                            fit: BoxFit.cover,
+                      // 🎯 Real thumbnail from most recent asset (instead of static image)
+                      recentAssets.when(
+                        data: (renderList) {
+                          if (renderList.totalAssets > 0) {
+                            final mostRecentAsset = renderList.loadAsset(0);
+                            return CachedNetworkImage(
+                              imageUrl: getThumbnailUrlForRemoteId(mostRecentAsset.remoteId!),
+                              httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/recent.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/recent.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          // Fallback to static image if no assets
+                          return Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/library/recent.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/recent.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/recent.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -196,7 +253,7 @@ class RecentCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Recent'.tr(),
+                  'recent'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -206,7 +263,12 @@ class RecentCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '285 items'.tr(),
+                  // 🎯 Real count from Immich (instead of hardcoded "285 items")
+                  recentAssets.when(
+                    data: (renderList) => '${renderList.totalAssets} ${tr('items')}',
+                    loading: () => '0 ${tr('items')}',
+                    error: (_, __) => '0 ${tr('items')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
@@ -226,6 +288,9 @@ class FamilyCollectionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Get real people data from Immich
+    final peopleData = ref.watch(getAllPeopleProvider);
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -255,12 +320,59 @@ class FamilyCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Background image
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/library/family.png'),
-                            fit: BoxFit.cover,
+                      // 🎯 Real face thumbnail from first person (instead of static image)
+                      peopleData.when(
+                        data: (people) {
+                          if (people.isNotEmpty) {
+                            final firstPerson = people.first;
+                            return CachedNetworkImage(
+                              imageUrl: getFaceThumbnailUrl(firstPerson.id),
+                              httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/family.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/family.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          // Fallback to static image if no people
+                          return Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/library/family.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/family.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/family.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -294,7 +406,7 @@ class FamilyCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Family'.tr(),
+                  'family'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -304,7 +416,12 @@ class FamilyCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '112 items'.tr(),
+                  // 🎯 Real count of people from Immich (instead of hardcoded "112 items")
+                  peopleData.when(
+                    data: (people) => '${people.length} ${tr('items')}',
+                    loading: () => '0 ${tr('items')}',
+                    error: (_, __) => '0 ${tr('items')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
@@ -324,6 +441,9 @@ class FavoritesCollectionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Get real favorites data from Immich
+    final favoriteAssets = ref.watch(favoriteTimelineProvider);
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -356,12 +476,59 @@ class FavoritesCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Background image
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/library/favorites.png'),
-                            fit: BoxFit.cover,
+                      // 🎯 Real thumbnail from first favorite (instead of static image)
+                      favoriteAssets.when(
+                        data: (renderList) {
+                          if (renderList.totalAssets > 0) {
+                            final firstFavorite = renderList.loadAsset(0);
+                            return CachedNetworkImage(
+                              imageUrl: getThumbnailUrlForRemoteId(firstFavorite.remoteId!),
+                              httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/favorites.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/favorites.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          // Fallback to static image if no favorites
+                          return Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/library/favorites.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/favorites.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/favorites.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -395,7 +562,7 @@ class FavoritesCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Favorites'.tr(),
+                  'favorites'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -405,7 +572,12 @@ class FavoritesCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '67 items'.tr(),
+                  // 🎯 Real count from Immich (instead of hardcoded "67 items")
+                  favoriteAssets.when(
+                    data: (renderList) => '${renderList.totalAssets} ${tr('items')}',
+                    loading: () => '0 ${tr('items')}',
+                    error: (_, __) => '0 ${tr('items')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
@@ -425,6 +597,10 @@ class ImagesCollectionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Get all timeline data and filter for images
+    final currentUser = ref.watch(currentUserProvider);
+    final allAssets = ref.watch(singleUserTimelineProvider(currentUser?.id ?? ''));
+    
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -457,12 +633,68 @@ class ImagesCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Background image
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/library/images.png'),
-                            fit: BoxFit.cover,
+                      // 🎯 Real thumbnail from first image (instead of static image)
+                      allAssets.when(
+                        data: (renderList) {
+                          // Find first image (non-video) asset
+                          Asset? firstImage;
+                          for (int i = 0; i < renderList.totalAssets; i++) {
+                            final asset = renderList.loadAsset(i);
+                            if (asset.type == AssetType.image) {
+                              firstImage = asset;
+                              break;
+                            }
+                          }
+                          
+                          if (firstImage != null) {
+                            return CachedNetworkImage(
+                              imageUrl: getThumbnailUrlForRemoteId(firstImage.remoteId!),
+                              httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/images.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/images.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          // Fallback to static image if no images
+                          return Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/library/images.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/images.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/images.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -496,7 +728,7 @@ class ImagesCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Images'.tr(),
+                  'images'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -506,7 +738,21 @@ class ImagesCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '1,847 items'.tr(),
+                  // 🎯 Real count of images from Immich (filter out videos)
+                  allAssets.when(
+                    data: (renderList) {
+                      int imageCount = 0;
+                      for (int i = 0; i < renderList.totalAssets; i++) {
+                        final asset = renderList.loadAsset(i);
+                        if (asset.type == AssetType.image) {
+                          imageCount++;
+                        }
+                      }
+                      return '$imageCount ${tr('items')}';
+                    },
+                    loading: () => '0 ${tr('items')}',
+                    error: (_, __) => '0 ${tr('items')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
@@ -526,6 +772,8 @@ class VideosCollectionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Real videos data from Immich
+    final videoAssets = ref.watch(allVideosTimelineProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -558,12 +806,59 @@ class VideosCollectionCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Background image
-                      Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/library/videos.png'),
-                            fit: BoxFit.cover,
+                      // 🎯 Real thumbnail from first video (instead of static image)
+                      videoAssets.when(
+                        data: (renderList) {
+                          if (renderList.totalAssets > 0) {
+                            final firstVideo = renderList.loadAsset(0);
+                            return CachedNetworkImage(
+                              imageUrl: getThumbnailUrlForRemoteId(firstVideo.remoteId!),
+                              httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              placeholder: (context, url) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/videos.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                decoration: const BoxDecoration(
+                                  image: DecorationImage(
+                                    image: AssetImage('assets/library/videos.png'),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                          // Fallback to static image if no videos
+                          return Container(
+                            decoration: const BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage('assets/library/videos.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/videos.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        error: (_, __) => Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/library/videos.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -597,7 +892,7 @@ class VideosCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Videos'.tr(),
+                  'videos'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -607,7 +902,12 @@ class VideosCollectionCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '438 items'.tr(),
+                  // 🎯 Real count from Immich (instead of hardcoded "438 items")
+                  videoAssets.when(
+                    data: (renderList) => '${renderList.totalAssets} ${tr('items')}',
+                    loading: () => '0 ${tr('items')}',
+                    error: (_, __) => '0 ${tr('items')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
@@ -622,11 +922,13 @@ class VideosCollectionCard extends ConsumerWidget {
   }
 }
 
-class PlacesCollectionCard extends StatelessWidget {
+class PlacesCollectionCard extends ConsumerWidget {
   const PlacesCollectionCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 🎯 Get real places data from Immich
+    final placesData = ref.watch(getAllPlacesProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isTablet = constraints.maxWidth > 600;
@@ -699,7 +1001,7 @@ class PlacesCollectionCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                 child: Text(
-                  'Places'.tr(),
+                  'places'.tr(),
                   style: context.textTheme.titleSmall?.copyWith(
                     color: context.colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -709,7 +1011,12 @@ class PlacesCollectionCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 4.0),
                 child: Text(
-                  '23 cities'.tr(),
+                  // 🎯 Real count of places from Immich (instead of hardcoded "23 cities")
+                  placesData.when(
+                    data: (places) => '${places.length} ${tr('cities')}',
+                    loading: () => '0 ${tr('cities')}',
+                    error: (_, __) => '0 ${tr('cities')}',
+                  ),
                   style: context.textTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,

@@ -3,6 +3,8 @@ import 'package:webdav_client/webdav_client.dart' as webdav;
 import 'package:immich_mobile/widgets/common/immich_app_bar.dart';
 import 'package:immich_mobile/widgets/common/search_field.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:immich_mobile/entities/store.entity.dart' as immichStore;
+import 'package:immich_mobile/domain/models/store.model.dart';
 
 class FileBrowserPage extends StatefulWidget {
   const FileBrowserPage({super.key});
@@ -13,9 +15,9 @@ class FileBrowserPage extends StatefulWidget {
 
 class FileBrowserPageState extends State<FileBrowserPage> {
   late webdav.Client client;
-  final url = 'http://100.113.37.85:8888/remote.php/dav/files/admin/';
-  final user = 'admin';
-  final pwd = 'Expo@2020#';
+  late String url;
+  late String user;
+  late String pwd;
   String dirPath = '/';
 
   // Search functionality
@@ -41,30 +43,35 @@ class FileBrowserPageState extends State<FileBrowserPage> {
   @override
   void initState() {
     super.initState();
-    client = webdav.newClient(
-      'http://100.113.37.85:8888/remote.php/dav/files/admin/',
-      user: 'admin',
-      password: 'Expo@2020#',
-      debug: true,
-    );
-    client.ping().then((_) {
-      print("✅ Connection successful");
-    }).catchError((e) {
-      print("❌ Ping failed: $e");
-    });
+    url = immichStore.Store.tryGet(StoreKey.localEndpoint) ?? '';
+    user = immichStore.Store.tryGet(StoreKey.nextcloudUser) ?? '';
+    pwd = immichStore.Store.tryGet(StoreKey.nextcloudPassword) ?? '';
+    if (url.isNotEmpty && user.isNotEmpty && pwd.isNotEmpty) {
+      client = webdav.newClient(
+        url,
+        user: user,
+        password: pwd,
+        debug: true,
+      );
+      client.ping().then((_) {
+        print("✅ Connection successful");
+      }).catchError((e) {
+        print("❌ Ping failed: $e");
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty || user.isEmpty || pwd.isEmpty) {
       return const Scaffold(
-        body: Center(child: Text("You need to add URL, user, and password")),
+        body: Center(child: Text("You need to configure Nextcloud URL, username, and password in settings.")),
       );
     }
 
     return Scaffold(
       appBar: ImmichAppBar(
-        title: isSelectionMode ? "${selectedFiles.length} selected" : "Library",
+        title: isSelectionMode ? "${selectedFiles.length} ${'selected'.tr()}" : "library".tr(),
         showUploadButton: false,
         showRefreshButton: false,
         showProfileButton: false,
@@ -122,7 +129,7 @@ class FileBrowserPageState extends State<FileBrowserPage> {
                   TextButton.icon(
                     onPressed: _selectAll,
                     icon: const Icon(Icons.select_all),
-                    label: const Text('Select All'),
+                    label: Text('select_all'.tr()),
                   ),
                   const Spacer(),
                   IconButton(

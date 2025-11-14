@@ -6,6 +6,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
 import 'package:immich_mobile/routing/router.dart';
 import 'package:immich_mobile/widgets/common/search_field.dart';
+import 'package:immich_mobile/providers/timeline.provider.dart';
+import 'package:immich_mobile/providers/user.provider.dart';
+import 'package:immich_mobile/providers/asset.provider.dart';
+import 'package:immich_mobile/utils/image_url_builder.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:immich_mobile/services/api.service.dart';
+import 'package:immich_mobile/providers/asset_viewer/current_asset.provider.dart';
 
 @RoutePage()
 class RecentCollectionPage extends HookConsumerWidget {
@@ -17,11 +24,9 @@ class RecentCollectionPage extends HookConsumerWidget {
     final searchFocusNode = useFocusNode();
     final isSearching = useState(false);
 
-    // Mock recent photos data - replace with actual provider
-    final List<String> recentPhotos = List.generate(
-      285,
-      (index) => 'https://picsum.photos/300/300?random=recent$index',
-    );
+    // 🎯 Real recent photos data from Immich
+    final currentUser = ref.watch(currentUserProvider);
+    final recentAssets = ref.watch(singleUserTimelineProvider(currentUser?.id ?? ''));
 
     return Scaffold(
       appBar: AppBar(
@@ -51,50 +56,119 @@ class RecentCollectionPage extends HookConsumerWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header info
-            Text(
-              '${'recent_photos_description'.tr()} • ${recentPhotos.length} ${'items'.tr()}',
-              style: context.textTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurface.withAlpha(180),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Navigate to common photo grid
-            Expanded(
-              child: Expanded(
-                child: GridView.builder(
-                  itemCount: recentPhotos.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        context.pushRoute(PhotoViewerRoute(
-                          imageUrls: recentPhotos,
-                          initialIndex: index,
-                        ));
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          recentPhotos[index],
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    );
-                  },
+      body: recentAssets.when(
+        data: (renderList) => Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header info with real count
+              Text(
+                '${'recent_photos_description'.tr()} • ${renderList.totalAssets} ${tr('items')}',
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurface.withAlpha(180),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              // Real Immich photos grid
+              Expanded(
+                child: renderList.totalAssets > 0
+                    ? RefreshIndicator(
+                        onRefresh: () async {
+                          // 🎯 FORCE FULL SYNC: Clear all data and re-download from server
+                          try {
+                            print("🔄 Starting force full sync for recent photos...");
+                            await ref.read(assetProvider.notifier).getAllAsset(clear: true);
+                            print("✅ Full sync completed");
+                          } catch (e) {
+                            print("❌ Sync failed: $e");
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Sync failed: $e')),
+                              );
+                            }
+                          }
+                        },
+                        child: GridView.builder(
+                          itemCount: renderList.totalAssets,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final asset = renderList.loadAsset(index);
+                            return GestureDetector(
+                              onTap: () {
+                                // 🎯 Set current asset and navigate to gallery viewer
+                                ref.read(currentAssetProvider.notifier).set(asset);
+                                context.pushRoute(
+                                  GalleryViewerRoute(
+                                    renderList: renderList,
+                                    initialIndex: index,
+                                    heroOffset: 0,
+                                    showStack: false,
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: getThumbnailUrlForRemoteId(asset.remoteId!),
+                                  httpHeaders: ApiService.getRequestHeaders(), // 🔑 Authentication headers!
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: Colors.grey[300],
+                                    child: const CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.error),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.photo_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'no_recent_photos'.tr(),
+                              style: context.textTheme.bodyLarge?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+              const SizedBox(height: 16),
+              Text(
+                'error_loading_recent_photos'.tr(),
+                style: context.textTheme.bodyLarge?.copyWith(color: Colors.red[600]),
+              ),
+            ],
+          ),
         ),
       ),
     );

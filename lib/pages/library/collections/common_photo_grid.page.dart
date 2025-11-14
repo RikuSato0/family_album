@@ -178,10 +178,9 @@ class PhotoGridPage extends HookConsumerWidget {
                     toggleSelection(index);
                   } else {
                     // Navigate to photo viewer
-                    context.pushRoute(PhotoViewerRoute(
-                      imageUrls: filteredPhotos.value,
-                      initialIndex: index,
-                    ));
+                ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('View photo at index $index')),
+                    );
                   }
                 },
                 onLongPress: () {
