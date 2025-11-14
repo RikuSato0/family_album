@@ -67,6 +67,10 @@ enum StoreKey<T> {
   loadOriginalVideo<bool>._(136),
   manageLocalMediaAndroid<bool>._(137),
 
+  // Nextcloud credentials
+  nextcloudUser<String>._(2000),
+  nextcloudPassword<String>._(2001),
+
   // Experimental stuff
   photoManagerCustomFilter<bool>._(1000);
 
