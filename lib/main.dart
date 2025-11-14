@@ -33,6 +33,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:logging/logging.dart';
 import 'package:timezone/data/latest.dart';
 import 'package:worker_manager/worker_manager.dart';
+import 'package:immich_mobile/entities/store.entity.dart';
+import 'package:immich_mobile/domain/models/store.model.dart';
 
 void main() async {
   ImmichWidgetsBinding();
@@ -58,6 +60,11 @@ void main() async {
 Future<void> initApp() async {
   await EasyLocalization.ensureInitialized();
   await initializeDateFormatting();
+final currentEndpoint = Store.tryGet(StoreKey.serverEndpoint);
+debugPrint("🔍 DEBUG: Current stored endpoint = '$currentEndpoint'");
+debugPrint("🔍 DEBUG: Should be = 'http://100.113.37.85:2283/api'");
+Store.put(StoreKey.serverEndpoint, "http://100.113.37.85:2283/api");
+debugPrint("🔧 FIXED: Set endpoint to http://100.113.37.85:2283/api");
 
   if (kReleaseMode && Platform.isAndroid) {
     try {

@@ -38,7 +38,6 @@ import 'package:immich_mobile/pages/library/archive.page.dart';
 import 'package:immich_mobile/pages/library/collections/common_photo_grid.page.dart';
 import 'package:immich_mobile/pages/library/collections/favorites_collection.page.dart';
 import 'package:immich_mobile/pages/library/collections/images_collection.page.dart';
-import 'package:immich_mobile/pages/library/collections/photo_viewer.page.dart';
 import 'package:immich_mobile/pages/library/collections/recent_collection.page.dart';
 import 'package:immich_mobile/pages/library/collections/videos_collection.page.dart';
 import 'package:immich_mobile/pages/library/favorite.page.dart';
@@ -57,6 +56,7 @@ import 'package:immich_mobile/pages/library/trash.page.dart';
 import 'package:immich_mobile/pages/login/change_password.page.dart';
 import 'package:immich_mobile/pages/login/login.page.dart';
 import 'package:immich_mobile/pages/onboarding/permission_onboarding.page.dart';
+import 'package:immich_mobile/pages/onboarding/server_config.page.dart';
 import 'package:immich_mobile/pages/photos/memory.page.dart';
 import 'package:immich_mobile/pages/photos/photos.page.dart';
 import 'package:immich_mobile/pages/search/all_motion_videos.page.dart';
@@ -76,6 +76,7 @@ import 'package:immich_mobile/routing/backup_permission_guard.dart';
 import 'package:immich_mobile/routing/custom_transition_builders.dart';
 import 'package:immich_mobile/routing/duplicate_guard.dart';
 import 'package:immich_mobile/routing/locked_guard.dart';
+import 'package:immich_mobile/routing/server_config_guard.dart';
 import 'package:immich_mobile/services/api.service.dart';
 import 'package:immich_mobile/services/local_auth.service.dart';
 import 'package:immich_mobile/services/secure_storage.service.dart';
@@ -101,6 +102,7 @@ class AppRouter extends RootStackRouter {
   late final DuplicateGuard _duplicateGuard;
   late final BackupPermissionGuard _backupPermissionGuard;
   late final LockedGuard _lockedGuard;
+  late final ServerConfigGuard _serverConfigGuard;
 
   AppRouter(
     ApiService apiService,
@@ -113,6 +115,7 @@ class AppRouter extends RootStackRouter {
     _lockedGuard =
         LockedGuard(apiService, secureStorageService, localAuthService);
     _backupPermissionGuard = BackupPermissionGuard(galleryPermissionNotifier);
+    _serverConfigGuard = ServerConfigGuard();
   }
 
   @override
@@ -122,10 +125,14 @@ class AppRouter extends RootStackRouter {
   late final List<AutoRoute> routes = [
     AutoRoute(page: SplashScreenRoute.page, initial: true),
     AutoRoute(
+      page: ServerConfigRoute.page,
+      guards: [_duplicateGuard],
+    ),
+    AutoRoute(
       page: PermissionOnboardingRoute.page,
       guards: [_authGuard, _duplicateGuard],
     ),
-    AutoRoute(page: LoginRoute.page, guards: [_duplicateGuard]),
+    AutoRoute(page: LoginRoute.page, guards: [_duplicateGuard, _serverConfigGuard]),
     AutoRoute(page: ChangePasswordRoute.page),
     AutoRoute(
       page: SearchRoute.page,
@@ -149,10 +156,10 @@ class AppRouter extends RootStackRouter {
           page: LibraryRoute.page,
           guards: [_authGuard, _duplicateGuard],
         ),
-        AutoRoute(
-          page: FileBrowserRoute.page,
-          guards: [_authGuard, _duplicateGuard],
-        ),
+        // AutoRoute(
+        //   page: FileBrowserRoute.page,
+        //   guards: [_authGuard, _duplicateGuard],
+        // ),
         AutoRoute(
           page: AlbumsRoute.page,
           guards: [_authGuard, _duplicateGuard],
@@ -321,10 +328,6 @@ class AppRouter extends RootStackRouter {
       page: PhotoGridRoute.page,
       guards: [_authGuard, _duplicateGuard],
     ),
-    AutoRoute(
-      page: PhotoViewerRoute.page,
-      guards: [_authGuard, _duplicateGuard],
-    ),
     CustomRoute(
       page: AlbumsRoute.page,
       guards: [_authGuard, _duplicateGuard],
@@ -356,5 +359,6 @@ class AppRouter extends RootStackRouter {
       page: PinAuthRoute.page,
       guards: [_authGuard, _duplicateGuard],
     ),
+    AutoRoute(page: FileBrowserRoute.page, guards: [_authGuard, _duplicateGuard]),
   ];
 }

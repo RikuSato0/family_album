@@ -1443,55 +1443,6 @@ class PhotoGridRouteArgs {
   }
 }
 
-/// generated route for
-/// [PhotoViewerPage]
-class PhotoViewerRoute extends PageRouteInfo<PhotoViewerRouteArgs> {
-  PhotoViewerRoute({
-    Key? key,
-    required List<String> imageUrls,
-    required int initialIndex,
-    List<PageRouteInfo>? children,
-  }) : super(
-          PhotoViewerRoute.name,
-          args: PhotoViewerRouteArgs(
-            key: key,
-            imageUrls: imageUrls,
-            initialIndex: initialIndex,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'PhotoViewerRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      final args = data.argsAs<PhotoViewerRouteArgs>();
-      return PhotoViewerPage(
-        key: args.key,
-        imageUrls: args.imageUrls,
-        initialIndex: args.initialIndex,
-      );
-    },
-  );
-}
-
-class PhotoViewerRouteArgs {
-  const PhotoViewerRouteArgs({
-    this.key,
-    required this.imageUrls,
-    required this.initialIndex,
-  });
-
-  final Key? key;
-  final List<String> imageUrls;
-  final int initialIndex;
-
-  @override
-  String toString() {
-    return 'PhotoViewerRouteArgs{key: $key, imageUrls: $imageUrls, initialIndex: $initialIndex}';
-  }
-}
 
 /// generated route for
 /// [PermissionOnboardingPage]
