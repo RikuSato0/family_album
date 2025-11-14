@@ -42,6 +42,13 @@ class SplashScreenPageState extends ConsumerState<SplashScreenPage> {
     final endpoint = Store.tryGet(StoreKey.serverEndpoint);
     final accessToken = Store.tryGet(StoreKey.accessToken);
 
+    // Check if server is configured
+    if (endpoint == null || endpoint.isEmpty) {
+      log.info('No server configured, navigating to server config');
+      context.replaceRoute(const ServerConfigRoute());
+      return;
+    }
+
     bool isAuthSuccess = false;
 
     if (accessToken != null && serverUrl != null && endpoint != null) {

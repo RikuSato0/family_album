@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:immich_mobile/domain/models/log.model.dart';
 import 'package:immich_mobile/extensions/build_context_extensions.dart';
-
+import 'package:easy_localization/easy_localization.dart';
 @RoutePage()
 class AppLogDetailPage extends HookConsumerWidget {
   const AppLogDetailPage({super.key, required this.logMessage});
@@ -40,7 +40,7 @@ class AppLogDetailPage extends HookConsumerWidget {
                       context.scaffoldMessenger.showSnackBar(
                         SnackBar(
                           content: Text(
-                            "Copied to clipboard",
+                            "copied_to_clipboard".tr(),
                             style: context.textTheme.bodyLarge?.copyWith(
                               color: context.primaryColor,
                             ),
@@ -88,7 +88,7 @@ class AppLogDetailPage extends HookConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Text(
-                "FROM",
+                "from".tr(),
                 style: TextStyle(
                   fontSize: 12.0,
                   color: context.primaryColor,
@@ -120,19 +120,19 @@ class AppLogDetailPage extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Log Detail"),
+        title: Text("log_detail".tr()),
       ),
       body: SafeArea(
         child: ListView(
           children: [
-            buildTextWithCopyButton("MESSAGE", logMessage.message),
+            buildTextWithCopyButton("message".tr(), logMessage.message),
             if (logMessage.error != null)
-              buildTextWithCopyButton("DETAILS", logMessage.error.toString()),
+              buildTextWithCopyButton("details".tr(), logMessage.error.toString()),
             if (logMessage.logger != null)
               buildLogContext1(logMessage.logger.toString()),
             if (logMessage.stack != null)
               buildTextWithCopyButton(
-                "STACK TRACE",
+                "stack_trace".tr(),
                 logMessage.stack.toString(),
               ),
           ],

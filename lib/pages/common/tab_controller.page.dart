@@ -126,8 +126,8 @@ class TabControllerPage extends HookConsumerWidget {
       //     ),
       //   ),
       // ),
-NavigationDestination(
-        label: 'Photos'.tr(),
+      NavigationDestination(
+        label: 'photos'.tr(),
         icon: navIconWrapper(
           Image.asset(
             'assets/navigator/photos.png',
@@ -150,7 +150,7 @@ NavigationDestination(
         ),
       ),
       NavigationDestination(
-        label: 'Files'.tr(),
+        label: 'files'.tr(),
         icon: navIconWrapper(
           Image.asset(
             'assets/navigator/files.png',
@@ -173,7 +173,7 @@ NavigationDestination(
         ),
       ),
       NavigationDestination(
-        label: 'Settings'.tr(),
+        label: 'settings'.tr(),
         icon: navIconWrapper(
           const Icon(Icons.settings, color: Colors.grey),
         ),
@@ -189,7 +189,7 @@ NavigationDestination(
         ),
       ),
       NavigationDestination(
-        label: 'Profile'.tr(),
+        label: 'profile'.tr(),
         icon: navIconWrapper(
           Consumer(
             builder: (context, ref, _) {
