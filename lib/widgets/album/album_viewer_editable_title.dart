@@ -27,8 +27,8 @@ class AlbumViewerEditableTitle extends HookConsumerWidget {
 
     void onFocusModeChange() {
       if (!titleFocusNode.hasFocus && titleTextEditController.text.isEmpty) {
-        ref.watch(albumViewerProvider.notifier).setEditTitleText("Untitled");
-        titleTextEditController.text = "Untitled";
+        ref.watch(albumViewerProvider.notifier).setEditTitleText("untitled".tr());
+        titleTextEditController.text = "untitled".tr();
       }
     }
 
@@ -60,7 +60,7 @@ class AlbumViewerEditableTitle extends HookConsumerWidget {
           ref.watch(albumViewerProvider.notifier).setEditTitleText(albumName);
           ref.watch(albumViewerProvider.notifier).enableEditAlbum();
 
-          if (titleTextEditController.text == 'Untitled') {
+          if (titleTextEditController.text == "untitled".tr()) {
             titleTextEditController.clear();
           }
         },

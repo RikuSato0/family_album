@@ -25,7 +25,7 @@ class ImmichTitleText extends StatelessWidget {
     //   color: context.primaryColor,
     // );
     Text(
-      'Family Club',
+      'Baity',
       style: context.textTheme.labelLarge?.copyWith(
         fontSize: fontSize,
         color: color ?? context.primaryColor,

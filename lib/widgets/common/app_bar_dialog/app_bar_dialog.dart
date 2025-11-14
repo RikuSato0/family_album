@@ -69,7 +69,7 @@ class ImmichAppBarDialog extends HookConsumerWidget {
             const SizedBox(height: 8),
             // App Title
             Text(
-              'Family Hub',
+              'app_name'.tr(),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
@@ -190,7 +190,7 @@ class ImmichAppBarDialog extends HookConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Full Name',
+                        'full_name'.tr(),
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),
@@ -239,7 +239,7 @@ class ImmichAppBarDialog extends HookConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Email Address',
+                        'email_address'.tr(),
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),
@@ -284,8 +284,12 @@ class ImmichAppBarDialog extends HookConsumerWidget {
                         return ConfirmDialog(
                           title: "app_bar_signout_dialog_title",
                           content: "app_bar_signout_dialog_content",
+                          cancel: "cancel",
                           ok: "yes",
                           onOk: () async {
+                            // Close the dialog first
+                            Navigator.of(ctx).pop();
+                            
                             isLoggingOut.value = true;
                             await ref
                                 .read(authProvider.notifier)
@@ -296,7 +300,11 @@ class ImmichAppBarDialog extends HookConsumerWidget {
                             ref.read(backupProvider.notifier).cancelBackup();
                             ref.read(assetProvider.notifier).clearAllAssets();
                             ref.read(websocketProvider.notifier).disconnect();
-                            context.replaceRoute(const LoginRoute());
+                            
+                            // Use the original context for navigation
+                            if (context.mounted) {
+                              context.replaceRoute(const LoginRoute());
+                            }
                           },
                         );
                       },
@@ -328,7 +336,7 @@ class ImmichAppBarDialog extends HookConsumerWidget {
                   Icon(Icons.logout_rounded, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Log Out',
+                  'logout'.tr(),
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
