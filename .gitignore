@@ -10,6 +10,8 @@
 .svn/
 *.ipa
 *.zip
+*.apk
+*.aab
 
 # IntelliJ related
 *.iml
@@ -31,6 +33,8 @@
 .pub-cache/
 .pub/
 /build/
+devtools_options.yaml
+custom_lint.log
 
 # Web related
 lib/generated_plugin_registrant.dart
@@ -41,14 +45,34 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android related
 /android/app/debug
 /android/app/profile
 /android/app/release
 android/app/.cxx
+android/local.properties
+android/gradlew
+android/gradlew.bat
+android/.gradle/
+android/captures/
+android/key.properties
+
+# iOS/XCode related
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+ios/build/
+ios/.DS_Store
 
 # Fastlane
 ios/fastlane/report.xml
+android/fastlane/report.xml
 
 # Isar
 default.isar
