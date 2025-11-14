@@ -48,7 +48,7 @@ const Map<String, Locale> locales = {
   // 'Vietnamese (vi)': Locale('vi'),
 };
 
-const String translationsPath = 'assets/i18n';
+const String translationsPath = 'assets/translations';
 
 const List<Locale> localesNotSupportedByOverpass = [
   Locale('el', 'GR'),
